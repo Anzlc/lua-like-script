@@ -1,6 +1,8 @@
 use std::vec;
 
-pub struct Tokenizer;
+pub struct Tokenizer {
+    tokens: Vec<Token>,
+}
 
 #[derive(Debug)]
 pub enum Value {
@@ -38,6 +40,7 @@ pub enum Token {
     OpMinus,
     OpMultiply,
     OpDivide,
+    OpDivideFloorSet,
     OpMod,
     OpExponent,
     Len,
@@ -61,23 +64,93 @@ pub enum Token {
     DoubleDot,
     TripleDot,
     Apostrophe,
+    VariableOrFunction(String),
     Value(Value),
 }
 
-const SEPERATORS: &'static str = " ";
+const SEPERATORS: &'static [&str] = &[" ", "\n", "\t", "\r"];
+const OPERATORS: &'static [&str] = &["+", "-", "*", "/", "%", "^", "<", ">", "="];
 
 impl Tokenizer {
-    pub fn tokenize(input: String) -> Vec<Token> {
-        let mut tokens: Vec<Token> = Vec::new();
-
+    pub fn new() -> Self {
+        Tokenizer { tokens: vec![] }
+    }
+    pub fn tokenize(&mut self, input: String) {
         let mut buf = String::new();
 
         let mut iterator = input.chars().peekable();
-        while let Some(c) = iterator.next() {}
+        while let Some(c) = iterator.next() {
+            if SEPERATORS.contains(&c.to_string().as_str()) {
+                self.add_token(Tokenizer::try_match_token(&buf));
+                buf.clear();
+                continue;
+            }
+            if OPERATORS.contains(&c.to_string().as_str()) {
+                self.add_token(Tokenizer::try_match_token(&buf));
+                buf.clear();
+                buf.push(c);
+                while let Some(c) = iterator.peek() {
+                    if !OPERATORS.contains(&c.to_string().as_str()) {
+                        self.add_token(Tokenizer::try_match_token(&buf));
+                        buf.clear();
 
-        tokens
+                        break;
+                    }
+
+                    if let Some(c) = iterator.next() {
+                        buf.push(c);
+                    }
+                }
+                continue;
+            }
+            if c == '\"' {
+                self.add_token(Tokenizer::try_match_token(&buf));
+                buf.clear();
+                buf.push(c);
+                while let Some(c) = iterator.next() {
+                    buf.push(c);
+                    if c == '\"' {
+                        self.add_token(Tokenizer::try_match_token(&buf));
+                        buf.clear();
+                        break;
+                    }
+                }
+                continue;
+            }
+
+            buf.push(c);
+        }
     }
+
+    pub fn get_tokens(&self) -> &[Token] {
+        &self.tokens
+    }
+
+    fn try_match_token(token: &str) -> Option<Token> {
+        if let Some(t) = Tokenizer::get_token_from_keyword(token) {
+            return Some(t);
+        }
+        if let Ok(t) = token.parse::<f64>() {
+            return Some(Token::Value(Value::Number(t)));
+        }
+
+        if token.starts_with("\"") && token.ends_with("\"") {
+            return Some(Token::Value(Value::String(String::from(token))));
+        }
+        if token.len() > 0 {
+            return Some(Token::VariableOrFunction(token.to_string()));
+        }
+        None
+    }
+
+    fn add_token(&mut self, token: Option<Token>) {
+        if let Some(token) = token {
+            self.tokens.push(token);
+        }
+    }
+
     fn get_token_from_keyword(buf: &str) -> Option<Token> {
+        // TODO: Should probably make a hashmap
         return match buf {
             "{" => Some(Token::OpenCurly),
             "}" => Some(Token::CloseCurly),
@@ -123,6 +196,7 @@ impl Tokenizer {
             "return" => Some(Token::ElseIf),
             "not" => Some(Token::ElseIf),
             "do" => Some(Token::ElseIf),
+            "//=" => Some(Token::OpDivideFloorSet),
             "\"" | "\'" => Some(Token::Apostrophe),
             "true" => Some(Token::True),
             "false" => Some(Token::False),
