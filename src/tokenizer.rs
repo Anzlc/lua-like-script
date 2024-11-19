@@ -4,17 +4,19 @@ pub struct Tokenizer {
     tokens: Vec<Token>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     Nil,
     String(String),
-    Number(f64),
+    Float(f64),
+    Int(i64),
     Bool(bool),
     List(Vec<Value>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Token {
+    EndLine,
     And,
     Break,
     Do,
@@ -36,16 +38,11 @@ pub enum Token {
     Then,
     Until,
     While,
-    OpPlus,
-    OpMinus,
-    OpMultiply,
-    OpDivide,
-    OpDivideFloorSet,
-    OpMod,
-    OpExponent,
+    Operator(Operator),
+    OperatorAssign(Operator),
     Len,
     Equals,
-    NegEqual,
+    NotEqual,
     LessOrEqual,
     GreaterOrEqual,
     Greater,
@@ -68,9 +65,20 @@ pub enum Token {
     Value(Value),
 }
 
-const SEPERATORS: &'static [&str] = &[" ", "\n", "\t", "\r"];
-const OPERATORS: &'static [&str] = &["+", "-", "*", "/", "%", "^", "<", ">", "="];
+#[derive(Debug, Clone)]
+pub enum Operator {
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    FloorDivide,
+    Mod,
+    Power,
+}
 
+const SEPERATORS: &'static [&str] = &[" ", "\n", "\t", "\r"];
+const OPERATORS: &'static [&str] = &["!", "+", "-", "*", "/", "%", "^", "<", ">", "="];
+const NON_EXTENDABLE: &'static [&str] = &[")", "(", ","];
 impl Tokenizer {
     pub fn new() -> Self {
         Tokenizer { tokens: vec![] }
@@ -83,6 +91,9 @@ impl Tokenizer {
             if SEPERATORS.contains(&c.to_string().as_str()) {
                 self.add_token(Tokenizer::try_match_token(&buf));
                 buf.clear();
+                if c == '\n' {
+                    self.add_token(Some(Token::EndLine));
+                }
                 continue;
             }
             if OPERATORS.contains(&c.to_string().as_str()) {
@@ -117,9 +128,18 @@ impl Tokenizer {
                 }
                 continue;
             }
+            if NON_EXTENDABLE.contains(&c.to_string().as_str()) {
+                self.add_token(Tokenizer::try_match_token(&buf));
+                buf.clear();
+                buf.push(c);
+                self.add_token(Tokenizer::try_match_token(&buf));
+                buf.clear();
+                continue;
+            }
 
             buf.push(c);
         }
+        self.add_token(Tokenizer::try_match_token(&buf));
     }
 
     pub fn get_tokens(&self) -> &[Token] {
@@ -130,8 +150,11 @@ impl Tokenizer {
         if let Some(t) = Tokenizer::get_token_from_keyword(token) {
             return Some(t);
         }
+        if let Ok(t) = token.parse::<i64>() {
+            return Some(Token::Value(Value::Int(t)));
+        }
         if let Ok(t) = token.parse::<f64>() {
-            return Some(Token::Value(Value::Number(t)));
+            return Some(Token::Value(Value::Float(t)));
         }
 
         if token.starts_with("\"") && token.ends_with("\"") {
@@ -165,12 +188,20 @@ impl Tokenizer {
             "function" => Some(Token::Function),
             "local" => Some(Token::Local),
             "in" => Some(Token::In),
-            "+" => Some(Token::OpPlus),
-            "-" => Some(Token::OpMinus),
-            "/" => Some(Token::OpDivide),
-            "*" => Some(Token::OpMultiply),
-            "%" => Some(Token::OpMod),
-            "^" => Some(Token::OpExponent),
+            "+" => Some(Token::Operator(Operator::Add)),
+            "-" => Some(Token::Operator(Operator::Subtract)),
+            "/" => Some(Token::Operator(Operator::Divide)),
+            "//" => Some(Token::Operator(Operator::FloorDivide)),
+            "*" => Some(Token::Operator(Operator::Multiply)),
+            "%" => Some(Token::Operator(Operator::Mod)),
+            "^" => Some(Token::Operator(Operator::Power)),
+            "+=" => Some(Token::OperatorAssign(Operator::Add)),
+            "-=" => Some(Token::OperatorAssign(Operator::Subtract)),
+            "/=" => Some(Token::OperatorAssign(Operator::Divide)),
+            "//=" => Some(Token::OperatorAssign(Operator::FloorDivide)),
+            "*=" => Some(Token::OperatorAssign(Operator::Multiply)),
+            "%=" => Some(Token::OperatorAssign(Operator::Mod)),
+            "^=" => Some(Token::OperatorAssign(Operator::Power)),
             ";" => Some(Token::Semicolon),
             "." => Some(Token::Dot),
             "," => Some(Token::Comma),
@@ -179,7 +210,7 @@ impl Tokenizer {
             "..." => Some(Token::TripleDot),
             "=" => Some(Token::Set),
             "==" => Some(Token::Equals),
-            "!=" => Some(Token::NegEqual),
+            "!=" => Some(Token::NotEqual),
             "<" => Some(Token::Lower),
             ">" => Some(Token::Greater),
             "<=" => Some(Token::LessOrEqual),
@@ -196,7 +227,6 @@ impl Tokenizer {
             "return" => Some(Token::ElseIf),
             "not" => Some(Token::ElseIf),
             "do" => Some(Token::ElseIf),
-            "//=" => Some(Token::OpDivideFloorSet),
             "\"" | "\'" => Some(Token::Apostrophe),
             "true" => Some(Token::True),
             "false" => Some(Token::False),
