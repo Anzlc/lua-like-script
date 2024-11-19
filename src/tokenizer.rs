@@ -87,7 +87,38 @@ impl Tokenizer {
         let mut buf = String::new();
 
         let mut iterator = input.chars().peekable();
-        while let Some(c) = iterator.next() {
+        'char_iter: while let Some(c) = iterator.next() {
+            if c == '-' && *iterator.peek().unwrap_or(&'x') == '-' {
+                iterator.next();
+                self.add_token(Tokenizer::try_match_token(&buf));
+                buf.clear();
+                let x = iterator.next().unwrap_or('x');
+                if x == '[' && *iterator.peek().unwrap_or(&'x') == '[' {
+                    iterator.next();
+                    while let Some(c) = iterator.next() {
+                        if c == '-' && *iterator.peek().unwrap_or(&'x') == '-' {
+                            iterator.next();
+                            let x = iterator.next().unwrap_or('x');
+                            if x == ']' && *iterator.peek().unwrap_or(&'x') == ']' {
+                                iterator.next();
+
+                                continue 'char_iter;
+                            }
+                        }
+                    }
+                    // End of file
+                    // Probably should throw error: Unmatched block comment
+                    buf.clear();
+                    continue 'char_iter; // Break should probably do the same
+                } else {
+                    while let Some(c) = iterator.next() {
+                        if c == '\n' {
+                            continue 'char_iter;
+                        }
+                    }
+                }
+            }
+
             if SEPERATORS.contains(&c.to_string().as_str()) {
                 self.add_token(Tokenizer::try_match_token(&buf));
                 buf.clear();
@@ -96,6 +127,7 @@ impl Tokenizer {
                 }
                 continue;
             }
+
             if OPERATORS.contains(&c.to_string().as_str()) {
                 self.add_token(Tokenizer::try_match_token(&buf));
                 buf.clear();

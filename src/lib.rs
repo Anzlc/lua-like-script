@@ -75,13 +75,17 @@ mod tests {
 
     #[test]
     fn parser() {
-        let code = "
+        let code =
+            "
+        -- Simple code
         x = (10 + y) * 3^2
-
+        --[[ Hello world
         ";
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());
-
+        for t in tokenizer.get_tokens() {
+            println!("{:?}", t);
+        }
         let mut parser = Parser::new(tokenizer.get_tokens().to_vec());
         println!("{:#?}", parser.parse())
     }
