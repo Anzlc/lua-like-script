@@ -12,6 +12,10 @@ pub enum AstNode {
         variable: String,
         rhs: Box<AstNode>,
     },
+    FunctionCall {
+        name: String,
+        args: Vec<AstNode>,
+    },
     Variable(String),
     Literal(Value),
 }
@@ -179,6 +183,19 @@ impl Parser {
         if let Some(t) = self.get_current_token() {
             if let Token::VariableOrFunction(v) = t {
                 let v = v.clone();
+                if let Some(Token::OpenParen) = self.peek() {
+                    self.advance();
+                    self.advance();
+                    let mut args: Vec<AstNode> = vec![];
+
+                    loop {
+                        if let Some(Token::CloseParen) = self.get_current_token() {
+                            return AstNode::FunctionCall { name: v, args: args };
+                        }
+                        args.push(self.parse_expression());
+                        self.advance(); // Skip ,
+                    }
+                }
                 self.advance();
                 return AstNode::Variable(v);
             }
