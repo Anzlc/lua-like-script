@@ -1,6 +1,6 @@
 use crate::tokenizer::{ Operator, Token, Value };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum AstNode {
     Block(Vec<AstNode>),
     BinaryOp {
