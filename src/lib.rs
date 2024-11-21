@@ -59,7 +59,7 @@ mod tests {
     }
 
     #[test]
-    fn parser() {
+    fn parser_expression() {
         let code =
             "-- Simple code
         x = (10 + y(1, 10,\"Is this real chat\")) * 3^2^2
