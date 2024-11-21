@@ -10,74 +10,30 @@ mod tests {
     use super::*;
 
     #[test]
-    fn it_works() {
-        let mut tokenizer = Tokenizer::new();
-
-        tokenizer.tokenize("while true x //= \"Hello World\"".to_string());
-
-        for t in tokenizer.get_tokens() {
-            println!("{:?}", t);
-        }
-    }
-
-    #[test]
-    fn test_chatgpt() {
-        let code =
-            "
-            a, b = 10, 3
-            sum, prod, mod = a + b, a * b, a % b
-            eq, lt = (a == b), (a < b)
-";
-
+    fn tokenizer_assignment() {
+        let code = "x = 10";
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());
-        println!("Len of tokens: {}", tokenizer.get_tokens().len());
-        for t in tokenizer.get_tokens() {
-            println!("{:?}", t);
-        }
+        assert_eq!(tokenizer.get_tokens(), [
+            Token::VariableOrFunction("x".to_string()),
+            Token::Set,
+            Token::Value(tokenizer::Value::Int(10)),
+        ]);
     }
-
     #[test]
-    fn test_3() {
-        println!("What the dog doung");
-        let code =
-            "
-            n = int(input(\"Vnesi število: \"))
-            random = random(1, 10)
-            while (n != random)
-            do
-                if n > random then
-                    print(\"Preveč\")
-                    
-                end
-                if n < random then
-                    print(\"Premalo\")
-                    
-                end
-                if n == random then
-                    print(\"Bravo\")
-                    break
-                end
-                n = int(input(\"Vnesi število: \"))
-            end
-                
-
-
-";
-
+    fn tokenizer_comment() {
+        let code = "-- Comment";
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());
-        println!("Len of tokens: {}", tokenizer.get_tokens().len());
-        for t in tokenizer.get_tokens() {
-            println!("{:?}", t);
-        }
+        assert_eq!(tokenizer.get_tokens(), []);
     }
 
     #[test]
     fn parser() {
-        let code = "
+        let code =
+            "
         -- Simple code
-        x = (10 + y(1, 10)) * 3^2^2
+        x = (10 + y(1, 10,\"Is this real chat\")) * 3^2^2
         
         ";
         let mut tokenizer = Tokenizer::new();

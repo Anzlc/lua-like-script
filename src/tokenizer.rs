@@ -4,7 +4,7 @@ pub struct Tokenizer {
     tokens: Vec<Token>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Nil,
     String(String),
@@ -14,7 +14,7 @@ pub enum Value {
     List(Vec<Value>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     EndLine,
     And,
@@ -65,7 +65,7 @@ pub enum Token {
     Value(Value),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Operator {
     Add,
     Subtract,
@@ -113,12 +113,13 @@ impl Tokenizer {
                 } else {
                     while let Some(c) = iterator.next() {
                         if c == '\n' {
+                            buf.clear();
                             continue 'char_iter;
                         }
                     }
                 }
+                continue 'char_iter;
             }
-
             if SEPERATORS.contains(&c.to_string().as_str()) {
                 self.add_token(Tokenizer::try_match_token(&buf));
                 buf.clear();
@@ -127,7 +128,6 @@ impl Tokenizer {
                 }
                 continue;
             }
-
             if OPERATORS.contains(&c.to_string().as_str()) {
                 self.add_token(Tokenizer::try_match_token(&buf));
                 buf.clear();
