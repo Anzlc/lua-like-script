@@ -49,26 +49,6 @@ impl Parser {
         return self.tokens.get(self.index);
     }
 
-    fn consume(&mut self) -> Option<Token> {
-        match self.tokens.get(self.index) {
-            Some(t) => {
-                let token = t.to_owned();
-                drop(t);
-
-                self.tokens = self.tokens
-                    .iter()
-                    .enumerate()
-                    .filter(|(i, _)| *i != 0)
-                    .map(|(_, e)| e.to_owned())
-                    .collect();
-                return Some(token);
-            }
-            None => {
-                return None;
-            }
-        }
-    }
-
     pub fn parse(&mut self) -> AstNode {
         let mut statements: Vec<AstNode> = vec![];
 
