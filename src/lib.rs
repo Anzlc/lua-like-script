@@ -109,4 +109,22 @@ mod tests {
         let parsed = parser.parse();
         assert_eq!(parsed, ast)
     }
+
+    #[test]
+    fn test1() {
+        let code = "-- Simple code
+        x = 10+-1
+        
+        
+        ";
+        let mut tokenizer = Tokenizer::new();
+        tokenizer.tokenize(code.to_string());
+        for t in tokenizer.get_tokens() {
+            println!("{:?}", t);
+        }
+
+        let mut parser = Parser::new(tokenizer.get_tokens().to_vec());
+        let parsed = parser.parse();
+        println!("{:#?}", parsed)
+    }
 }

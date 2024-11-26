@@ -1,4 +1,4 @@
-use std::vec;
+use std::{ iter, vec };
 
 pub struct Tokenizer {
     tokens: Vec<Token>,
@@ -132,18 +132,23 @@ impl Tokenizer {
                 self.add_token(Tokenizer::try_match_token(&buf));
                 buf.clear();
                 buf.push(c);
+                //x+2
                 while let Some(c) = iterator.peek() {
-                    if !OPERATORS.contains(&c.to_string().as_str()) {
-                        self.add_token(Tokenizer::try_match_token(&buf));
-                        buf.clear();
-
+                    if
+                        (((*c == '/' && buf == "/") || *c == '=') && buf.len() == 1) ||
+                        (buf == "//" && *c == '=')
+                    {
+                        buf.push(*c);
+                        iterator.next();
+                    } else {
                         break;
                     }
-
-                    if let Some(c) = iterator.next() {
-                        buf.push(c);
-                    }
                 }
+
+                self.add_token(Tokenizer::try_match_token(&buf));
+                eprintln!("Buf: {}", buf);
+                buf.clear();
+
                 continue;
             }
             if c == '\"' {
