@@ -113,7 +113,7 @@ mod tests {
     #[test]
     fn test1() {
         let code = "-- Simple code
-        x = 10+-1
+        x = 10+-g(1)
         
         
         ";

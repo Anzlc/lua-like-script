@@ -18,10 +18,19 @@ pub enum AstNode {
     },
     Variable(String),
     Literal(Value),
+    UnaryOp {
+        op: UnaryOp,
+        value: Box<AstNode>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum UnaryOp {
+    Negative, // Currently only negative
 }
 
 pub struct Parser {
-    //TODO: Replace with linked list to allow poping at front
+    //TODO: Replace with linked list to allow popping at front
     tokens: Vec<Token>,
     index: usize,
 }
@@ -169,11 +178,19 @@ impl Parser {
                     let mut args: Vec<AstNode> = vec![];
 
                     loop {
+                        println!("Self: {:?}", self.get_current_token());
                         if let Some(Token::CloseParen) = self.get_current_token() {
                             return AstNode::FunctionCall { name: v, args: args };
                         }
                         args.push(self.parse_expression());
-                        self.advance(); // Skip ,
+
+                        if let Some(Token::Comma) = self.get_current_token() {
+                            self.advance(); // Skip ,
+                            continue;
+                        }
+                        println!("Selsssf: {:?}", self.get_current_token());
+                        self.advance();
+                        return AstNode::FunctionCall { name: v, args: args };
                     }
                 }
                 self.advance();
@@ -188,6 +205,15 @@ impl Parser {
                 return expr;
             }
             eprintln!("Unmatched (");
+        }
+
+        if let Some(Token::Operator(Operator::Subtract)) = self.get_current_token() {
+            self.advance();
+            println!("crr tokn: {:?}", self.get_current_token());
+
+            let value = self.parse_factor();
+
+            return AstNode::UnaryOp { op: UnaryOp::Negative, value: Box::new(value) };
         }
         AstNode::Literal(Value::Nil)
     }
