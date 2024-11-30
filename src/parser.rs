@@ -152,13 +152,19 @@ impl Parser {
 
     fn get_precedence(op: &Operator) -> (u8, Associative) {
         match op {
-            Operator::Subtract => (0, Associative::LEFT),
-            Operator::Add => (1, Associative::LEFT),
-            Operator::Divide => (1, Associative::LEFT),
-            Operator::Mod => (1, Associative::LEFT),
-            Operator::FloorDivide => (1, Associative::LEFT),
-            Operator::Multiply => (2, Associative::LEFT),
-            Operator::Power => (3, Associative::RIGHT),
+            Operator::Power => (6, Associative::RIGHT),
+            Operator::Concatenation => (5, Associative::RIGHT),
+            Operator::Multiply => (4, Associative::LEFT),
+            Operator::Divide => (4, Associative::LEFT),
+            Operator::FloorDivide => (4, Associative::LEFT),
+            Operator::Mod => (4, Associative::LEFT),
+            Operator::Subtract => (3, Associative::LEFT),
+            Operator::Add => (3, Associative::LEFT),
+            Operator::Relational(_) => (2, Associative::LEFT),
+            Operator::Equals => (1, Associative::LEFT),
+            Operator::NotEquals => (1, Associative::LEFT),
+            Operator::And => (0, Associative::LEFT),
+            Operator::Or => (0, Associative::LEFT),
         }
     }
     fn parse_factor(&mut self) -> AstNode {

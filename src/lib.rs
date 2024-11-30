@@ -112,9 +112,11 @@ mod tests {
 
     #[test]
     fn test1() {
-        let code = "-- Simple code
+        let code =
+            "-- Simple code
         x = 10+-g(1)
-        
+        y = \"Hello\" .. \"World\"
+        z = n + 1 < 10
         
         ";
         let mut tokenizer = Tokenizer::new();
