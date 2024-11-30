@@ -117,6 +117,8 @@ mod tests {
         x = 10+-g(1)
         y = \"Hello\" .. \"World\"
         z = n + 1 < 10
+        a = not 5==5
+        b = #\"Hello world\"
         
         ";
         let mut tokenizer = Tokenizer::new();

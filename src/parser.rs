@@ -1,3 +1,5 @@
+use std::os::windows::io::BorrowedSocket;
+
 use crate::tokenizer::{ Operator, Token, Value };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -26,7 +28,9 @@ pub enum AstNode {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum UnaryOp {
-    Negative, // Currently only negative
+    Negative,
+    Length,
+    Not,
 }
 
 pub struct Parser {
@@ -218,8 +222,17 @@ impl Parser {
             println!("crr tokn: {:?}", self.get_current_token());
 
             let value = self.parse_factor();
+        }
 
-            return AstNode::UnaryOp { op: UnaryOp::Negative, value: Box::new(value) };
+        if let Some(Token::Len) = self.get_current_token() {
+            self.advance();
+            let value = self.parse_factor();
+            return AstNode::UnaryOp { op: UnaryOp::Length, value: Box::new(value) };
+        }
+        if let Some(Token::Not) = self.get_current_token() {
+            self.advance();
+            let value = self.parse_factor();
+            return AstNode::UnaryOp { op: UnaryOp::Not, value: Box::new(value) };
         }
         AstNode::Literal(Value::Nil)
     }
