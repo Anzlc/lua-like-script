@@ -20,6 +20,9 @@ pub enum AstNode {
     },
     Variable(String),
     Literal(Value),
+    Table {
+        items: Vec<AstNode>,
+    },
     UnaryOp {
         op: UnaryOp,
         value: Box<AstNode>,
@@ -233,6 +236,27 @@ impl Parser {
             self.advance();
             let value = self.parse_factor();
             return AstNode::UnaryOp { op: UnaryOp::Not, value: Box::new(value) };
+        }
+        if let Some(Token::OpenSquare) = self.get_current_token() {
+            self.advance();
+            //self.advance();
+            let mut items: Vec<AstNode> = vec![];
+
+            loop {
+                println!("Self: {:?}", self.get_current_token());
+                if let Some(Token::CloseSquare) = self.get_current_token() {
+                    return AstNode::Table { items };
+                }
+                items.push(self.parse_expression());
+
+                if let Some(Token::Comma) = self.get_current_token() {
+                    self.advance(); // Skip ,
+                    continue;
+                }
+
+                self.advance();
+                return AstNode::Table { items };
+            }
         }
         AstNode::Literal(Value::Nil)
     }
