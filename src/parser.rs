@@ -27,6 +27,9 @@ pub enum AstNode {
         op: UnaryOp,
         value: Box<AstNode>,
     },
+    DoScope {
+        stmts: Vec<AstNode>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -88,9 +91,26 @@ impl Parser {
                 self.advance();
                 None
             }
-            Some(t) => unimplemented!("Joj res pa to še ne dela {:?}", t),
-            None => panic!("Joj me ne"),
+            Some(Token::Do) => { Some(self.parse_do_end_scope()) }
+            Some(t) => None,
+            None => None,
         };
+    }
+    fn parse_do_end_scope(&mut self) -> AstNode {
+        if let Some(Token::Do) = self.get_current_token() {
+            self.advance();
+            let mut stmts = vec![];
+            loop {
+                if let Some(Token::End) = self.get_current_token() {
+                    self.advance();
+                    return AstNode::DoScope { stmts: stmts };
+                }
+                if let Some(v) = self.parse_statement() {
+                    stmts.push(v);
+                }
+            }
+        }
+        unreachable!("Should not reach if code is okie dokie")
     }
     fn parse_assignment(&mut self) -> AstNode {
         let variable = match self.get_current_token() {

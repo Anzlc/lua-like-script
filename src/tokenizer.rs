@@ -259,6 +259,7 @@ impl Tokenizer {
             ">=" => Some(Token::Operator(Operator::Relational(Comparison::MoreOrEqual))),
             "#" => Some(Token::Len),
             "repeat" => Some(Token::Repeat),
+            "end" => Some(Token::End),
             "while" => Some(Token::While),
             "for" => Some(Token::For),
             "then" => Some(Token::Then),

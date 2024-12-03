@@ -121,10 +121,13 @@ mod tests {
         a = not 5==5
         b = #\"Hello world\"
         --]]
-
-        x = [1,2,3,f(1)]
-        y = x
+        do
+            x = 1
+            y = 10 + f(x) / 2
+        end
         
+        do
+        end
         ";
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());
