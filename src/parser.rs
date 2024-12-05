@@ -4,7 +4,7 @@ use crate::tokenizer::{ Operator, Token, Value };
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AstNode {
-    Block(Vec<AstNode>),
+    Program(Vec<AstNode>),
     BinaryOp {
         op: Operator,
         lhs: Box<AstNode>,
@@ -29,6 +29,10 @@ pub enum AstNode {
     },
     DoScope {
         stmts: Vec<AstNode>,
+    },
+    While {
+        condition: Box<AstNode>,
+        scope: Box<AstNode>,
     },
 }
 
@@ -77,7 +81,7 @@ impl Parser {
             }
         }
 
-        AstNode::Block(statements)
+        AstNode::Program(statements)
     }
 
     fn advance(&mut self) {
@@ -92,9 +96,20 @@ impl Parser {
                 None
             }
             Some(Token::Do) => { Some(self.parse_do_end_scope()) }
+            Some(Token::While) => { Some(self.parse_while()) }
             Some(t) => None,
             None => None,
         };
+    }
+    fn parse_while(&mut self) -> AstNode {
+        if let Some(Token::While) = self.get_current_token() {
+            self.advance();
+            return AstNode::While {
+                condition: Box::new(self.parse_expression()),
+                scope: Box::new(self.parse_do_end_scope()),
+            };
+        }
+        unreachable!("Nononoo");
     }
     fn parse_do_end_scope(&mut self) -> AstNode {
         if let Some(Token::Do) = self.get_current_token() {

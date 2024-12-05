@@ -70,7 +70,7 @@ mod tests {
         for t in tokenizer.get_tokens() {
             println!("{:?}", t);
         }
-        let ast = AstNode::Block(
+        let ast = AstNode::Program(
             [
                 AstNode::Assignment {
                     variable: "x".to_string(),
@@ -121,13 +121,11 @@ mod tests {
         a = not 5==5
         b = #\"Hello world\"
         --]]
-        do
-            x = 1
-            y = 10 + f(x) / 2
-        end
-        
-        do
-        end
+        i = 0
+        while i < 10 do
+            x = print(i)
+            i = i+1
+        end 
         ";
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());
