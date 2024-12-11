@@ -114,18 +114,18 @@ mod tests {
     fn test1() {
         let code =
             "-- Simple code
-            --[[
-        x = 10+-g(1)
-        y = \"Hello\" .. \"World\"
-        z = n + 1 < 10
-        a = not 5==5
-        b = #\"Hello world\"
-        --]]
-        i = 0
-        while i < 10 do
-            x = print(i)
-            i = i+1
-        end 
+            
+        
+        
+        res = \"\"
+        if x % 2 == 0 then
+            res = \"Fizz\"
+        elseif x % 3 == 0 then
+            res = \"Buzz\"
+        else
+            res = \"Oh no\"
+        end
+
         ";
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());

@@ -27,12 +27,18 @@ pub enum AstNode {
         op: UnaryOp,
         value: Box<AstNode>,
     },
-    DoScope {
+    Scope {
         stmts: Vec<AstNode>,
     },
     While {
         condition: Box<AstNode>,
         scope: Box<AstNode>,
+    },
+    If {
+        condition: Box<AstNode>,
+        scope: Box<AstNode>,
+        elseif: Vec<AstNode>, // Contains AstNode::If with empty elseif and else scope
+        else_scope: Box<Option<AstNode>>,
     },
 }
 
@@ -97,9 +103,131 @@ impl Parser {
             }
             Some(Token::Do) => { Some(self.parse_do_end_scope()) }
             Some(Token::While) => { Some(self.parse_while()) }
+            Some(Token::If) => { Some(self.parse_if()) }
             Some(t) => None,
             None => None,
         };
+    }
+
+    fn parse_if(&mut self) -> AstNode {
+        if let Some(Token::If) = self.get_current_token() {
+            self.advance();
+            let expr = self.parse_expression();
+            if let Some(Token::Then) = self.get_current_token() {
+                self.advance();
+                let mut stmts = vec![];
+                loop {
+                    if let Some(Token::End) = self.get_current_token() {
+                        self.advance();
+                        let scope = AstNode::Scope { stmts: stmts };
+                        return AstNode::If {
+                            condition: Box::new(expr),
+                            scope: Box::new(scope),
+                            elseif: vec![],
+                            else_scope: Box::new(None),
+                        };
+                    }
+                    if let Some(Token::ElseIf) = self.get_current_token() {
+                        let scope = AstNode::Scope { stmts: stmts };
+                        let mut elseifs = vec![];
+                        while let Some(elif_node) = self.parse_else_if_branches() {
+                            println!("Elif NOde: {:#?}", elif_node);
+                            elseifs.push(elif_node);
+                        }
+                        return AstNode::If {
+                            condition: Box::new(expr),
+                            scope: Box::new(scope),
+                            elseif: elseifs,
+                            else_scope: Box::new(self.parse_else_branch()),
+                        };
+                    }
+                    if let Some(Token::Else) = self.get_current_token() {
+                        let scope = AstNode::Scope { stmts: stmts };
+                        return AstNode::If {
+                            condition: Box::new(expr),
+                            scope: Box::new(scope),
+                            elseif: vec![],
+                            else_scope: Box::new(self.parse_else_branch()),
+                        };
+                    }
+                    if let Some(v) = self.parse_statement() {
+                        stmts.push(v);
+                    }
+                }
+            } else {
+                panic!("Expected then after expression");
+            }
+        }
+        unreachable!("NOnon")
+    }
+    fn parse_else_if_branches(&mut self) -> Option<AstNode> {
+        if let Some(Token::ElseIf) = self.get_current_token() {
+            println!("Ječp");
+            self.advance();
+            let expr = self.parse_expression();
+
+            if let Some(Token::Then) = self.get_current_token() {
+                let mut stmts = vec![];
+                self.advance();
+                loop {
+                    println!("jkfkdloop");
+                    println!("{:?}", self.get_current_token());
+                    if let Some(Token::End) = self.get_current_token() {
+                        self.advance();
+                        let scope = AstNode::Scope { stmts: stmts };
+                        println!("jeele");
+                        return Some(AstNode::If {
+                            condition: Box::new(expr),
+                            scope: Box::new(scope),
+                            elseif: vec![],
+                            else_scope: Box::new(None),
+                        });
+                    }
+                    if let Some(Token::ElseIf) = self.get_current_token() {
+                        let scope = AstNode::Scope { stmts: stmts };
+                        return Some(AstNode::If {
+                            condition: Box::new(expr),
+                            scope: Box::new(scope),
+                            elseif: vec![],
+                            else_scope: Box::new(None),
+                        });
+                    }
+                    if let Some(Token::Else) = self.get_current_token() {
+                        let scope = AstNode::Scope { stmts: stmts };
+                        return Some(AstNode::If {
+                            condition: Box::new(expr),
+                            scope: Box::new(scope),
+                            elseif: vec![],
+                            else_scope: Box::new(None),
+                        });
+                    }
+
+                    if let Some(v) = self.parse_statement() {
+                        stmts.push(v);
+                    }
+                }
+            } else {
+                panic!("Expected then after expression");
+            }
+        }
+        None
+    }
+    fn parse_else_branch(&mut self) -> Option<AstNode> {
+        if let Some(Token::Else) = self.get_current_token() {
+            self.advance();
+            let mut stmts = vec![];
+            loop {
+                if let Some(Token::End) = self.get_current_token() {
+                    self.advance();
+                    let scope = AstNode::Scope { stmts: stmts };
+                    return Some(scope);
+                }
+                if let Some(v) = self.parse_statement() {
+                    stmts.push(v);
+                }
+            }
+        }
+        None
     }
     fn parse_while(&mut self) -> AstNode {
         if let Some(Token::While) = self.get_current_token() {
@@ -118,7 +246,7 @@ impl Parser {
             loop {
                 if let Some(Token::End) = self.get_current_token() {
                     self.advance();
-                    return AstNode::DoScope { stmts: stmts };
+                    return AstNode::Scope { stmts: stmts };
                 }
                 if let Some(v) = self.parse_statement() {
                     stmts.push(v);
@@ -260,6 +388,7 @@ impl Parser {
             println!("crr tokn: {:?}", self.get_current_token());
 
             let value = self.parse_factor();
+            return AstNode::UnaryOp { op: UnaryOp::Negative, value: Box::new(value) };
         }
 
         if let Some(Token::Len) = self.get_current_token() {
