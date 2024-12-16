@@ -117,13 +117,8 @@ mod tests {
             
         
         
-        res = \"\"
-        if x % 2 == 0 then
-            res = \"Fizz\"
-        elseif x % 3 == 0 then
-            res = \"Buzz\"
-        else
-            res = \"Oh no\"
+        for i in 0,10,2 do
+            x = print(i)
         end
 
         ";

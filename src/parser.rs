@@ -1,4 +1,4 @@
-use std::os::windows::io::BorrowedSocket;
+use std::{ os::windows::io::BorrowedSocket, thread::Scope };
 
 use crate::tokenizer::{ Operator, Token, Value };
 
@@ -39,6 +39,13 @@ pub enum AstNode {
         scope: Box<AstNode>,
         elseif: Vec<AstNode>, // Contains AstNode::If with empty elseif and else scope
         else_scope: Box<Option<AstNode>>,
+    },
+    For {
+        variable: String,
+        start: Box<AstNode>,
+        end: Box<AstNode>,
+        step: Box<AstNode>,
+        scope: Box<AstNode>,
     },
 }
 
@@ -104,9 +111,51 @@ impl Parser {
             Some(Token::Do) => { Some(self.parse_do_end_scope()) }
             Some(Token::While) => { Some(self.parse_while()) }
             Some(Token::If) => { Some(self.parse_if()) }
+            Some(Token::For) => { Some(self.parse_for()) }
+
             Some(t) => None,
             None => None,
         };
+    }
+
+    fn parse_for(&mut self) -> AstNode {
+        /*
+        for i in start,stop,step do
+            <SCOPE>
+        end
+        */
+
+        if let Some(Token::For) = self.get_current_token() {
+            self.advance();
+            if let Some(Token::VariableOrFunction(name)) = self.get_current_token() {
+                let name = name.clone();
+                self.advance();
+                if let Some(Token::In) = self.get_current_token() {
+                    self.advance();
+                    let start = self.parse_expression();
+                    println!("{:?}", self.get_current_token());
+                    if let Some(Token::Comma) = self.get_current_token() {
+                        println!("Hello");
+                        self.advance();
+                        let end = self.parse_expression();
+                        let mut step: AstNode = AstNode::Literal(Value::Int(1));
+                        if let Some(Token::Comma) = self.get_current_token() {
+                            self.advance();
+                            step = self.parse_expression();
+                        }
+                        let scope = self.parse_do_end_scope();
+                        return AstNode::For {
+                            variable: name.clone(),
+                            start: Box::new(start),
+                            end: Box::new(end),
+                            step: Box::new(step),
+                            scope: Box::new(scope),
+                        };
+                    }
+                }
+            }
+        }
+        panic!("Wrong syntax for a for loop, are you dumb?")
     }
 
     fn parse_if(&mut self) -> AstNode {
