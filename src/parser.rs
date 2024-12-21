@@ -47,6 +47,11 @@ pub enum AstNode {
         step: Box<AstNode>,
         scope: Box<AstNode>,
     },
+    RepeatUntil {
+        // A Do-While loop
+        condition: Box<AstNode>,
+        scope: Box<AstNode>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -112,10 +117,33 @@ impl Parser {
             Some(Token::While) => { Some(self.parse_while()) }
             Some(Token::If) => { Some(self.parse_if()) }
             Some(Token::For) => { Some(self.parse_for()) }
+            Some(Token::Repeat) => { Some(self.parse_repeat_until()) }
 
             Some(t) => None,
             None => None,
         };
+    }
+    fn parse_repeat_until(&mut self) -> AstNode {
+        if let Some(Token::Repeat) = self.get_current_token() {
+            self.advance();
+            let mut stmts = vec![];
+            loop {
+                if let Some(Token::Until) = self.get_current_token() {
+                    self.advance();
+                    break;
+                }
+                if let Some(v) = self.parse_statement() {
+                    stmts.push(v);
+                }
+            }
+            let expr = self.parse_expression();
+
+            return AstNode::RepeatUntil {
+                condition: Box::new(expr),
+                scope: Box::new(AstNode::Scope { stmts: stmts }),
+            };
+        }
+        unreachable!("Wrong repeat until syntax");
     }
 
     fn parse_for(&mut self) -> AstNode {
@@ -133,9 +161,8 @@ impl Parser {
                 if let Some(Token::In) = self.get_current_token() {
                     self.advance();
                     let start = self.parse_expression();
-                    println!("{:?}", self.get_current_token());
+
                     if let Some(Token::Comma) = self.get_current_token() {
-                        println!("Hello");
                         self.advance();
                         let end = self.parse_expression();
                         let mut step: AstNode = AstNode::Literal(Value::Int(1));

@@ -117,9 +117,9 @@ mod tests {
             
         
         
-        for i in 0,10,2 do
-            x = print(i)
-        end
+        repeat
+            x = 10
+        until x < 10
 
         ";
         let mut tokenizer = Tokenizer::new();
