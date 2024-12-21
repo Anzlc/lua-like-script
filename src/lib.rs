@@ -114,7 +114,7 @@ mod tests {
     fn test1() {
         let code = "-- Simple code
             
-        x //= 1
+        print(1)
 
         ";
         let mut tokenizer = Tokenizer::new();

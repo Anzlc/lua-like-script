@@ -341,6 +341,26 @@ impl Parser {
             _ => panic!("Nonno"),
         };
 
+        if let Some(Token::OpenParen) = self.get_current_token() {
+            self.advance();
+            let mut args: Vec<AstNode> = vec![];
+
+            loop {
+                if let Some(Token::CloseParen) = self.get_current_token() {
+                    return AstNode::FunctionCall { name: variable, args: args };
+                }
+                args.push(self.parse_expression());
+
+                if let Some(Token::Comma) = self.get_current_token() {
+                    self.advance(); // Skip ,
+                    continue;
+                }
+
+                self.advance();
+                return AstNode::FunctionCall { name: variable, args: args };
+            }
+        }
+
         if let Some(Token::Set) = self.get_current_token() {
             self.advance();
             return AstNode::Assignment {
