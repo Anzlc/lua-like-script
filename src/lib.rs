@@ -112,14 +112,9 @@ mod tests {
 
     #[test]
     fn test1() {
-        let code =
-            "-- Simple code
+        let code = "-- Simple code
             
-        
-        
-        repeat
-            x = 10
-        until x < 10
+        x //= 1
 
         ";
         let mut tokenizer = Tokenizer::new();

@@ -347,8 +347,16 @@ impl Parser {
                 variable: variable,
                 rhs: Box::new(self.parse_expression()),
             };
-        } else {
-            return AstNode::Literal(Value::Nil);
+        }
+
+        if let Some(Token::OperatorAssign(op)) = self.get_current_token() {
+            let op = op.clone();
+            self.advance();
+            let rhs = self.parse_expression();
+            let var = AstNode::Variable(variable.clone());
+            let expr = AstNode::BinaryOp { op: op, lhs: Box::new(var), rhs: Box::new(rhs) };
+
+            return AstNode::Assignment { variable, rhs: Box::new(expr) };
         }
 
         AstNode::Literal(Value::Nil)
