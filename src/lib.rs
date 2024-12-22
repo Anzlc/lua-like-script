@@ -73,6 +73,7 @@ mod tests {
         let ast = AstNode::Program(
             [
                 AstNode::Assignment {
+                    is_local: false,
                     variable: "x".to_string(),
                     rhs: Box::new(AstNode::BinaryOp {
                         op: tokenizer::Operator::Multiply,
@@ -112,9 +113,15 @@ mod tests {
 
     #[test]
     fn test1() {
-        let code = "-- Simple code
+        let code =
+            "-- Simple code
             
         print(1)
+        x = 10
+        do
+            local x = 20
+        end
+        print(x)
 
         ";
         let mut tokenizer = Tokenizer::new();

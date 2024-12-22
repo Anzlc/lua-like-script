@@ -11,6 +11,7 @@ pub enum AstNode {
         rhs: Box<AstNode>,
     },
     Assignment {
+        is_local: bool,
         variable: String,
         rhs: Box<AstNode>,
     },
@@ -108,7 +109,8 @@ impl Parser {
 
     fn parse_statement(&mut self) -> Option<AstNode> {
         return match self.get_current_token() {
-            Some(Token::VariableOrFunction(_)) => { Some(self.parse_assignment()) }
+            Some(Token::VariableOrFunction(_)) => { Some(self.parse_asignments_and_functions()) }
+            Some(Token::Local) => { Some(self.parse_assignment()) }
             Some(Token::EndLine) => {
                 self.advance();
                 None
@@ -332,16 +334,50 @@ impl Parser {
         unreachable!("Should not reach if code is okie dokie")
     }
     fn parse_assignment(&mut self) -> AstNode {
-        let variable = match self.get_current_token() {
-            Some(Token::VariableOrFunction(name)) => {
-                let cloned = name.clone();
+        let is_local = match self.get_current_token() {
+            Some(Token::Local) => {
                 self.advance();
-                cloned
+                true
             }
-            _ => panic!("Nonno"),
+            _ => false,
         };
 
-        if let Some(Token::OpenParen) = self.get_current_token() {
+        match self.get_current_token() {
+            Some(Token::VariableOrFunction(_)) => {}
+            _ => panic!("Inccorect call to parse_asignments_and_functions "),
+        }
+        if let Some(Token::Set) = self.peek() {
+            let variable = match self.get_current_token() {
+                Some(Token::VariableOrFunction(name)) => {
+                    let cloned = name.clone();
+                    self.advance();
+                    cloned
+                }
+                _ => panic!("Nonno"),
+            };
+            self.advance();
+            return AstNode::Assignment {
+                is_local: is_local,
+                variable: variable,
+                rhs: Box::new(self.parse_expression()),
+            };
+        }
+        unreachable!("Incorrect assignment")
+    }
+    fn parse_asignments_and_functions(&mut self) -> AstNode {
+        match self.get_current_token() {
+            Some(Token::VariableOrFunction(_)) => {}
+            _ => panic!("Inccorect call to parse_asignments_and_functions "),
+        }
+        if let Some(Token::OpenParen) = self.peek() {
+            let variable = match self.get_current_token() {
+                Some(Token::VariableOrFunction(name)) => {
+                    let cloned = name.clone();
+                    self.advance();
+                    cloned
+                }
+                _ => panic!("Nonno"),
+            };
             self.advance();
             let mut args: Vec<AstNode> = vec![];
 
@@ -361,25 +397,25 @@ impl Parser {
             }
         }
 
-        if let Some(Token::Set) = self.get_current_token() {
-            self.advance();
-            return AstNode::Assignment {
-                variable: variable,
-                rhs: Box::new(self.parse_expression()),
-            };
-        }
-
-        if let Some(Token::OperatorAssign(op)) = self.get_current_token() {
+        if let Some(Token::OperatorAssign(op)) = self.peek() {
             let op = op.clone();
+            let variable = match self.get_current_token() {
+                Some(Token::VariableOrFunction(name)) => {
+                    let cloned = name.clone();
+                    self.advance();
+                    cloned
+                }
+                _ => panic!("Nonno"),
+            };
             self.advance();
             let rhs = self.parse_expression();
             let var = AstNode::Variable(variable.clone());
             let expr = AstNode::BinaryOp { op: op, lhs: Box::new(var), rhs: Box::new(rhs) };
 
-            return AstNode::Assignment { variable, rhs: Box::new(expr) };
+            return AstNode::Assignment { is_local: false, variable, rhs: Box::new(expr) };
         }
 
-        AstNode::Literal(Value::Nil)
+        return self.parse_assignment();
     }
     fn parse_expression(&mut self) -> AstNode {
         // FIXME: Make it parse expression not just a number
