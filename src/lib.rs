@@ -1,8 +1,7 @@
 use tokenizer::Token;
-use parser::Parser;
 mod parser;
+use parser::{ Parser, AstNode };
 mod tokenizer;
-use parser::AstNode;
 
 #[cfg(test)]
 mod tests {
