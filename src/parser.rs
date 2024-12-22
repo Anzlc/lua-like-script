@@ -78,19 +78,15 @@ impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
         Parser { tokens, index: 0 }
     }
-
     fn peek(&self) -> Option<&Token> {
         return self.tokens.get(self.index + 1);
     }
-
     fn peek_at(&self, ahead: usize) -> Option<&Token> {
         return self.tokens.get(self.index + ahead);
     }
-
     fn get_current_token(&self) -> Option<&Token> {
         return self.tokens.get(self.index);
     }
-
     pub fn parse(&mut self) -> AstNode {
         let mut statements: Vec<AstNode> = vec![];
 
@@ -102,11 +98,9 @@ impl Parser {
 
         AstNode::Program(statements)
     }
-
     fn advance(&mut self) {
         self.index += 1;
     }
-
     fn parse_statement(&mut self) -> Option<AstNode> {
         return match self.get_current_token() {
             Some(Token::VariableOrFunction(_)) => { Some(self.parse_asignments_and_functions()) }
@@ -147,7 +141,6 @@ impl Parser {
         }
         unreachable!("Wrong repeat until syntax");
     }
-
     fn parse_for(&mut self) -> AstNode {
         /*
         for i in start,stop,step do
@@ -186,7 +179,6 @@ impl Parser {
         }
         panic!("Wrong syntax for a for loop, are you dumb?")
     }
-
     fn parse_if(&mut self) -> AstNode {
         if let Some(Token::If) = self.get_current_token() {
             self.advance();
@@ -459,7 +451,6 @@ impl Parser {
         }
         res
     }
-
     fn get_precedence(op: &Operator) -> (u8, Associative) {
         match op {
             Operator::Power => (6, Associative::RIGHT),

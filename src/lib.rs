@@ -5,7 +5,7 @@ mod tokenizer;
 
 #[cfg(test)]
 mod tests {
-    use tokenizer::Tokenizer;
+    use tokenizer::{ Tokenizer, Value };
 
     use super::*;
 
@@ -111,16 +111,165 @@ mod tests {
     }
 
     #[test]
-    fn test1() {
+    fn local_assignment() {
+        let code = "-- Simple code
+        local x = 10
+        
+        ";
+        let mut tokenizer = Tokenizer::new();
+        tokenizer.tokenize(code.to_string());
+
+        let ast = AstNode::Program(
+            [
+                AstNode::Assignment {
+                    is_local: true,
+                    variable: "x".to_string(),
+                    rhs: Box::new(AstNode::Literal(Value::Int(10))),
+                },
+            ].to_vec()
+        );
+        let mut parser = Parser::new(tokenizer.get_tokens().to_vec());
+        let parsed = parser.parse();
+        assert_eq!(parsed, ast)
+    }
+    #[test]
+    fn for_loop() {
         let code =
             "-- Simple code
-            
-        print(1)
-        x = 10
-        do
-            local x = 20
+        for i in 1,10 do
+            print(i)
         end
-        print(x)
+        
+        ";
+        let mut tokenizer = Tokenizer::new();
+        tokenizer.tokenize(code.to_string());
+
+        let ast = AstNode::Program(
+            [
+                AstNode::For {
+                    variable: "i".to_string(),
+                    start: Box::new(AstNode::Literal(Value::Int(1))),
+                    end: Box::new(AstNode::Literal(Value::Int(10))),
+                    step: Box::new(AstNode::Literal(Value::Int(1))),
+                    scope: Box::new(AstNode::Scope {
+                        stmts: [
+                            AstNode::FunctionCall {
+                                name: "print".to_string(),
+                                args: [AstNode::Variable("i".to_string())].to_vec(),
+                            },
+                        ].to_vec(),
+                    }),
+                },
+            ].to_vec()
+        );
+        let mut parser = Parser::new(tokenizer.get_tokens().to_vec());
+        let parsed = parser.parse();
+        assert_eq!(parsed, ast)
+    }
+    fn while_loop() {
+        let code =
+            "-- Simple code
+        while true do
+            print(i)
+        end
+        
+        ";
+        let mut tokenizer = Tokenizer::new();
+        tokenizer.tokenize(code.to_string());
+
+        let ast = AstNode::Program(
+            [
+                AstNode::While {
+                    condition: Box::new(AstNode::Literal(Value::Bool(true))),
+                    scope: Box::new(AstNode::Scope {
+                        stmts: [
+                            AstNode::FunctionCall {
+                                name: "print".to_string(),
+                                args: [AstNode::Variable("i".to_string())].to_vec(),
+                            },
+                        ].to_vec(),
+                    }),
+                },
+            ].to_vec()
+        );
+        let mut parser = Parser::new(tokenizer.get_tokens().to_vec());
+        let parsed = parser.parse();
+        assert_eq!(parsed, ast)
+    }
+
+    fn repeat_until() {
+        let code =
+            "-- Simple code
+        repeat
+            print(i)
+        until true
+        
+        ";
+        let mut tokenizer = Tokenizer::new();
+        tokenizer.tokenize(code.to_string());
+
+        let ast = AstNode::Program(
+            [
+                AstNode::RepeatUntil {
+                    condition: Box::new(AstNode::Literal(Value::Bool(true))),
+                    scope: Box::new(AstNode::Scope {
+                        stmts: [
+                            AstNode::FunctionCall {
+                                name: "print".to_string(),
+                                args: [AstNode::Variable("i".to_string())].to_vec(),
+                            },
+                        ].to_vec(),
+                    }),
+                },
+            ].to_vec()
+        );
+        let mut parser = Parser::new(tokenizer.get_tokens().to_vec());
+        let parsed = parser.parse();
+        assert_eq!(parsed, ast)
+    }
+
+    #[test]
+    fn if_statement() {
+        #[test]
+        fn parser_expression() {
+            let code =
+                "-- Simple code
+            if true then
+                print(1)
+            end
+            
+            ";
+            let mut tokenizer = Tokenizer::new();
+            tokenizer.tokenize(code.to_string());
+            for t in tokenizer.get_tokens() {
+                println!("{:?}", t);
+            }
+            let ast = AstNode::Program(
+                [
+                    AstNode::If {
+                        condition: Box::new(AstNode::Literal(Value::Bool(true))),
+                        scope: Box::new(AstNode::Scope {
+                            stmts: vec![AstNode::FunctionCall {
+                                name: "print".to_string(),
+                                args: vec![AstNode::Literal(Value::Int(1))],
+                            }],
+                        }),
+                        elseif: vec![],
+                        else_scope: Box::new(None),
+                    },
+                ].to_vec()
+            );
+            let mut parser = Parser::new(tokenizer.get_tokens().to_vec());
+            let parsed = parser.parse();
+            assert_eq!(parsed, ast)
+        }
+    }
+
+    #[test]
+    fn test1() {
+        let code = "-- Simple code
+            
+        
 
         ";
         let mut tokenizer = Tokenizer::new();
