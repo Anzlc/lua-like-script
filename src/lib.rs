@@ -148,14 +148,50 @@ mod tests {
             [
                 AstNode::For {
                     variable: "i".to_string(),
-                    start: Box::new(AstNode::Literal(Value::Int(1))),
-                    end: Box::new(AstNode::Literal(Value::Int(10))),
-                    step: Box::new(AstNode::Literal(Value::Int(1))),
+                    for_type: parser::ForType::Range {
+                        start: Box::new(AstNode::Literal(Value::Int(1))),
+                        end: Box::new(AstNode::Literal(Value::Int(10))),
+                        step: Box::new(AstNode::Literal(Value::Int(1))),
+                    },
+
                     scope: Box::new(AstNode::Scope {
                         stmts: [
                             AstNode::FunctionCall {
                                 name: "print".to_string(),
                                 args: [AstNode::Variable("i".to_string())].to_vec(),
+                            },
+                        ].to_vec(),
+                    }),
+                },
+            ].to_vec()
+        );
+        let mut parser = Parser::new(tokenizer.get_tokens().to_vec());
+        let parsed = parser.parse();
+        assert_eq!(parsed, ast)
+    }
+    fn for_loop_generic() {
+        let code =
+            "-- Simple code
+        for item in items do
+            print(item)
+        end
+        
+        ";
+        let mut tokenizer = Tokenizer::new();
+        tokenizer.tokenize(code.to_string());
+
+        let ast = AstNode::Program(
+            [
+                AstNode::For {
+                    variable: "item".to_string(),
+                    for_type: parser::ForType::Generic(
+                        Box::new(AstNode::Variable("items".to_string()))
+                    ),
+                    scope: Box::new(AstNode::Scope {
+                        stmts: [
+                            AstNode::FunctionCall {
+                                name: "print".to_string(),
+                                args: [AstNode::Variable("item".to_string())].to_vec(),
                             },
                         ].to_vec(),
                     }),
@@ -267,9 +303,12 @@ mod tests {
 
     #[test]
     fn test1() {
-        let code = "-- Simple code
+        let code =
+            "-- Simple code
             
-        
+        function print(text)
+            x += text
+        end
 
         ";
         let mut tokenizer = Tokenizer::new();

@@ -43,15 +43,28 @@ pub enum AstNode {
     },
     For {
         variable: String,
-        start: Box<AstNode>,
-        end: Box<AstNode>,
-        step: Box<AstNode>,
+        for_type: ForType,
         scope: Box<AstNode>,
     },
     RepeatUntil {
         // A Do-While loop
         condition: Box<AstNode>,
         scope: Box<AstNode>,
+    },
+    FunctionDeclaration {
+        name: String,
+        arguments: Vec<String>,
+        body: Box<AstNode>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ForType {
+    Generic(Box<AstNode>),
+    Range {
+        start: Box<AstNode>,
+        end: Box<AstNode>,
+        step: Box<AstNode>,
     },
 }
 
@@ -114,7 +127,7 @@ impl Parser {
             Some(Token::If) => { Some(self.parse_if()) }
             Some(Token::For) => { Some(self.parse_for()) }
             Some(Token::Repeat) => { Some(self.parse_repeat_until()) }
-
+            Some(Token::Function) => { Some(self.parse_function()) }
             Some(t) => None,
             None => None,
         };
@@ -146,6 +159,12 @@ impl Parser {
         for i in start,stop,step do
             <SCOPE>
         end
+
+        or
+
+        for i in some fucking shit do
+        
+        end
         */
 
         if let Some(Token::For) = self.get_current_token() {
@@ -165,13 +184,26 @@ impl Parser {
                             self.advance();
                             step = self.parse_expression();
                         }
-                        let scope = self.parse_do_end_scope();
-                        return AstNode::For {
-                            variable: name.clone(),
+                        let for_type = ForType::Range {
                             start: Box::new(start),
                             end: Box::new(end),
                             step: Box::new(step),
+                        };
+
+                        let scope = self.parse_do_end_scope();
+                        return AstNode::For {
+                            variable: name.clone(),
+                            for_type,
                             scope: Box::new(scope),
+                        };
+                    } else {
+                        let expr = start; // It's not called start here
+                        let for_type = ForType::Generic(Box::new(expr));
+
+                        return AstNode::For {
+                            variable: name.clone(),
+                            for_type,
+                            scope: Box::new(self.parse_do_end_scope()),
                         };
                     }
                 }
@@ -179,6 +211,7 @@ impl Parser {
         }
         panic!("Wrong syntax for a for loop, are you dumb?")
     }
+
     fn parse_if(&mut self) -> AstNode {
         if let Some(Token::If) = self.get_current_token() {
             self.advance();
@@ -554,5 +587,54 @@ impl Parser {
             }
         }
         AstNode::Literal(Value::Nil)
+    }
+
+    fn parse_function(&mut self) -> AstNode {
+        if let Some(Token::Function) = self.get_current_token() {
+            println!("hello");
+            self.advance();
+            let name = match self.get_current_token() {
+                Some(Token::VariableOrFunction(n)) => n.clone(),
+                _ => panic!("Wrong syntax expected name"),
+            };
+            self.advance();
+            if let Some(Token::OpenParen) = self.get_current_token() {
+            } else {
+                panic!("( not found");
+            }
+            self.advance();
+            println!("{:?}", self.get_current_token());
+            let mut args: Vec<String> = vec![];
+            loop {
+                if let Some(Token::CloseParen) = self.get_current_token() {
+                    self.advance();
+                    break;
+                }
+                if let Some(Token::VariableOrFunction(a)) = self.get_current_token() {
+                    args.push(a.clone());
+                    self.advance();
+                } else {
+                    self.advance(); // FIXME: Should check if comma
+                }
+            }
+            let mut stmts: Vec<AstNode> = vec![];
+
+            loop {
+                if let Some(Token::End) = self.get_current_token() {
+                    self.advance();
+                    break;
+                }
+                if let Some(stmt) = self.parse_statement() {
+                    stmts.push(stmt);
+                }
+            }
+
+            return AstNode::FunctionDeclaration {
+                name,
+                arguments: args,
+                body: Box::new(AstNode::Scope { stmts }),
+            };
+        }
+        unreachable!("Nononon")
     }
 }
