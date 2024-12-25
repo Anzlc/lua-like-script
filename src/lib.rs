@@ -305,7 +305,7 @@ mod tests {
     fn test1() {
         let code = "-- Simple code
             
-        y += 10 + 1 * 2
+        local y = 10 + 1 * 2 << 2
 
 
         ";

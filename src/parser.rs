@@ -388,6 +388,7 @@ impl Parser {
                 rhs: Box::new(self.parse_expression()),
             };
         }
+
         unreachable!("Incorrect assignment")
     }
     fn parse_asignments_and_functions(&mut self) -> AstNode {
@@ -422,7 +423,6 @@ impl Parser {
                 return AstNode::FunctionCall { name: variable, args: args };
             }
         }
-
         if let Some(Token::OperatorAssign(op)) = self.peek() {
             let op = op.clone();
             let variable = match self.get_current_token() {
