@@ -71,6 +71,12 @@ pub enum Operator {
     NotEquals,
     And,
     Or,
+    BitwiseOr,
+    BitwiseAnd,
+    BitwiseXOR,
+    BitwiseNot,
+    BitwiseLShift,
+    BitwiseRShift,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -82,7 +88,7 @@ pub enum Comparison {
 }
 
 const SEPERATORS: &'static [&str] = &[" ", "\n", "\t", "\r"];
-const OPERATORS: &'static [&str] = &["!", "+", "-", "*", "/", "%", "^", "<", ">", "="];
+const OPERATORS: &'static [&str] = &["&", "|", "!", "+", "-", "*", "/", "%", "^", "<", ">", "="];
 const NON_EXTENDABLE: &'static [&str] = &[")", "(", ",", "[", "]"];
 impl Tokenizer {
     pub fn new() -> Self {
@@ -137,20 +143,30 @@ impl Tokenizer {
                 self.add_token(Tokenizer::try_match_token(&buf));
                 buf.clear();
                 buf.push(c);
-                //x+2
-                while let Some(c) = iterator.peek() {
-                    if
-                        (((*c == '/' && buf == "/") || *c == '=') && buf.len() == 1) ||
-                        (buf == "//" && *c == '=')
-                    {
-                        buf.push(*c);
-                        iterator.next();
-                    } else {
-                        break;
+
+                //x+=2
+                loop {
+                    let c = iterator.peek();
+                    let mut new_buf = buf.clone();
+                    if let Some(c) = c {
+                        new_buf.push(*c);
                     }
+                    if let Some(Token::Operator(_)) = Tokenizer::try_match_token(&new_buf) {
+                        // Ok
+                        buf = new_buf;
+                        iterator.next();
+                        continue;
+                    }
+                    if let Some(Token::OperatorAssign(_)) = Tokenizer::try_match_token(&new_buf) {
+                        buf = new_buf;
+                        iterator.next();
+                        continue;
+                    }
+
+                    self.add_token(Tokenizer::try_match_token(&buf));
+                    break;
                 }
 
-                self.add_token(Tokenizer::try_match_token(&buf));
                 eprintln!("Buf: {}", buf);
                 buf.clear();
 
@@ -273,6 +289,13 @@ impl Tokenizer {
             "\"" | "\'" => Some(Token::Apostrophe),
             "true" => Some(Token::True),
             "false" => Some(Token::False),
+            "|" => Some(Token::Operator(Operator::BitwiseOr)),
+            "&" => Some(Token::Operator(Operator::BitwiseAnd)),
+            "~" => Some(Token::Operator(Operator::BitwiseNot)),
+            "^^" => Some(Token::Operator(Operator::BitwiseXOR)),
+
+            "<<" => Some(Token::Operator(Operator::BitwiseLShift)),
+            ">>" => Some(Token::Operator(Operator::BitwiseRShift)),
             _ => { None }
         };
     }

@@ -73,6 +73,7 @@ pub enum UnaryOp {
     Negative,
     Length,
     Not,
+    BitwiseNot,
 }
 
 pub struct Parser {
@@ -488,15 +489,21 @@ impl Parser {
         match op {
             Operator::Power => (6, Associative::RIGHT),
             Operator::Concatenation => (5, Associative::RIGHT),
+            Operator::BitwiseNot => (5, Associative::RIGHT), // Unary bitwise NOT
             Operator::Multiply => (4, Associative::LEFT),
             Operator::Divide => (4, Associative::LEFT),
             Operator::FloorDivide => (4, Associative::LEFT),
             Operator::Mod => (4, Associative::LEFT),
+            Operator::BitwiseLShift => (3, Associative::LEFT), // Left shift
+            Operator::BitwiseRShift => (3, Associative::LEFT), // Right shift
             Operator::Subtract => (3, Associative::LEFT),
             Operator::Add => (3, Associative::LEFT),
+            Operator::BitwiseAnd => (2, Associative::LEFT), // Bitwise AND
             Operator::Relational(_) => (2, Associative::LEFT),
+            Operator::BitwiseXOR => (1, Associative::LEFT), // Bitwise XOR
             Operator::Equals => (1, Associative::LEFT),
             Operator::NotEquals => (1, Associative::LEFT),
+            Operator::BitwiseOr => (0, Associative::LEFT), // Bitwise OR
             Operator::And => (0, Associative::LEFT),
             Operator::Or => (0, Associative::LEFT),
         }
@@ -553,6 +560,13 @@ impl Parser {
 
             let value = self.parse_factor();
             return AstNode::UnaryOp { op: UnaryOp::Negative, value: Box::new(value) };
+        }
+        if let Some(Token::Operator(Operator::BitwiseNot)) = self.get_current_token() {
+            self.advance();
+            println!("crr tokn: {:?}", self.get_current_token());
+
+            let value = self.parse_factor();
+            return AstNode::UnaryOp { op: UnaryOp::BitwiseNot, value: Box::new(value) };
         }
 
         if let Some(Token::Len) = self.get_current_token() {

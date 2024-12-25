@@ -303,12 +303,10 @@ mod tests {
 
     #[test]
     fn test1() {
-        let code =
-            "-- Simple code
+        let code = "-- Simple code
             
-        function print(text)
-            x += text
-        end
+        y += 10 + 1 * 2
+
 
         ";
         let mut tokenizer = Tokenizer::new();
