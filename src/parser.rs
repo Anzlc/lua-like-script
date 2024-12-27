@@ -551,7 +551,7 @@ impl Parser {
             println!("Curur: {:?}", self.get_current_token());
             if let Some(Token::OpenParen) = self.get_current_token() {
                 self.advance();
-                self.advance();
+
                 let mut args: Vec<AstNode> = vec![];
 
                 loop {
