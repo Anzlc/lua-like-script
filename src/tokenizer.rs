@@ -4,6 +4,8 @@ pub struct Tokenizer {
     tokens: Vec<Token>,
 }
 
+pub type MapEntry = (Value, Value);
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Nil,
@@ -11,7 +13,6 @@ pub enum Value {
     Float(f64),
     Int(i64),
     Bool(bool),
-    List(Vec<Value>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -52,6 +53,7 @@ pub enum Token {
     Dot,
     TripleDot,
     Apostrophe,
+    Continue,
     VariableOrFunction(String),
     Value(Value),
 }
@@ -89,7 +91,7 @@ pub enum Comparison {
 
 const SEPERATORS: &'static [&str] = &[" ", "\n", "\t", "\r"];
 const OPERATORS: &'static [&str] = &["&", "|", "!", "+", "-", "*", "/", "%", "^", "<", ">", "="];
-const NON_EXTENDABLE: &'static [&str] = &[")", "(", ",", "[", "]"];
+const NON_EXTENDABLE: &'static [&str] = &[".", ")", "(", ",", "[", "]", "{", "}"];
 impl Tokenizer {
     pub fn new() -> Self {
         Tokenizer { tokens: vec![] }
@@ -239,8 +241,9 @@ impl Tokenizer {
             "]" => Some(Token::CloseSquare),
             "(" => Some(Token::OpenParen),
             ")" => Some(Token::CloseParen),
-            "nil" => Some(Token::Nil),
+            "nil" => Some(Token::Value(Value::Nil)),
             "break" => Some(Token::Break),
+            "continue" => Some(Token::Continue),
             "and" => Some(Token::Operator(Operator::And)),
             "or" => Some(Token::Operator(Operator::Or)),
             "function" => Some(Token::Function),
@@ -287,8 +290,8 @@ impl Tokenizer {
             "not" => Some(Token::Not),
             "do" => Some(Token::Do),
             "\"" | "\'" => Some(Token::Apostrophe),
-            "true" => Some(Token::True),
-            "false" => Some(Token::False),
+            "true" => Some(Token::Value(Value::Bool(true))),
+            "false" => Some(Token::Value(Value::Bool(false))),
             "|" => Some(Token::Operator(Operator::BitwiseOr)),
             "&" => Some(Token::Operator(Operator::BitwiseAnd)),
             "~" => Some(Token::Operator(Operator::BitwiseNot)),
