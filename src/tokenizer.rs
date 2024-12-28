@@ -90,7 +90,21 @@ pub enum Comparison {
 }
 
 const SEPERATORS: &'static [&str] = &[" ", "\n", "\t", "\r"];
-const OPERATORS: &'static [&str] = &["&", "|", "!", "+", "-", "*", "/", "%", "^", "<", ">", "="];
+const OPERATORS: &'static [&str] = &[
+    "&",
+    "|",
+    "!",
+    "+",
+    "-",
+    "*",
+    "/",
+    "%",
+    "^",
+    "<",
+    ">",
+    "=",
+    "~",
+];
 const NON_EXTENDABLE: &'static [&str] = &[".", ")", "(", ",", "[", "]", "{", "}"];
 impl Tokenizer {
     pub fn new() -> Self {

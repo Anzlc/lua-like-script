@@ -1,5 +1,5 @@
 use std::{ iter::Map, os::windows::io::BorrowedSocket, thread::Scope };
-
+use crate::errors::ParserError;
 use crate::tokenizer::{ Operator, Token, Value, MapEntry };
 
 #[derive(Debug, Clone, PartialEq)]

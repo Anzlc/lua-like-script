@@ -2,6 +2,7 @@ use tokenizer::Token;
 mod parser;
 use parser::{ Parser, AstNode, ParsedValue, ForType };
 mod tokenizer;
+mod errors;
 
 #[cfg(test)]
 mod tests {
@@ -283,7 +284,7 @@ mod tests {
             
         --local x = {1,2,3, [\"Hello\"]=10, name=10, name=\"10\", hello={10}}
         --print(x[1][1][1])
-         x = (10 + y(1, 10,\"Is this real chat\")) * 3^2^2
+        
 
         ";
         let mut tokenizer = Tokenizer::new();
