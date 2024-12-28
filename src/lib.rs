@@ -100,7 +100,7 @@ mod tests {
         );
         let mut parser = Parser::new(tokenizer.get_tokens().to_vec());
         let parsed = parser.parse();
-        assert_eq!(parsed, ast);
+        assert_eq!(parsed.unwrap(), ast);
     }
 
     #[test]
@@ -119,7 +119,7 @@ mod tests {
         );
         let mut parser = Parser::new(tokenizer.get_tokens().to_vec());
         let parsed = parser.parse();
-        assert_eq!(parsed, ast);
+        assert_eq!(parsed.unwrap(), ast);
     }
 
     #[test]
@@ -149,7 +149,7 @@ mod tests {
         );
         let mut parser = Parser::new(tokenizer.get_tokens().to_vec());
         let parsed = parser.parse();
-        assert_eq!(parsed, ast);
+        assert_eq!(parsed.unwrap(), ast);
     }
 
     #[test]
@@ -174,7 +174,7 @@ mod tests {
         );
         let mut parser = Parser::new(tokenizer.get_tokens().to_vec());
         let parsed = parser.parse();
-        assert_eq!(parsed, ast);
+        assert_eq!(parsed.unwrap(), ast);
     }
 
     #[test]
@@ -199,7 +199,7 @@ mod tests {
         );
         let mut parser = Parser::new(tokenizer.get_tokens().to_vec());
         let parsed = parser.parse();
-        assert_eq!(parsed, ast);
+        assert_eq!(parsed.unwrap(), ast);
     }
 
     #[test]
@@ -226,7 +226,8 @@ mod tests {
         );
         let mut parser = Parser::new(tokenizer.get_tokens().to_vec());
         let parsed = parser.parse();
-        assert_eq!(parsed, ast);
+        println!("{:?}", parsed);
+        assert_eq!(parsed.unwrap(), ast);
     }
 
     #[test]
@@ -274,7 +275,7 @@ mod tests {
         let mut parser = Parser::new(tokenizer.get_tokens().to_vec());
         let parsed = parser.parse();
 
-        assert_eq!(parsed, ast);
+        assert_eq!(parsed.unwrap(), ast);
     }
 
     #[test]
@@ -284,7 +285,10 @@ mod tests {
             
         --local x = {1,2,3, [\"Hello\"]=10, name=10, name=\"10\", hello={10}}
         --print(x[1][1][1])
-        
+        if x < 10
+            print(x)
+        end
+    
 
         ";
         let mut tokenizer = Tokenizer::new();

@@ -1,3 +1,4 @@
+use std::f64::consts::E;
 use std::{ iter::Map, os::windows::io::BorrowedSocket, thread::Scope };
 use crate::errors::ParserError;
 use crate::tokenizer::{ Operator, Token, Value, MapEntry };
@@ -117,6 +118,7 @@ pub struct Parser {
     //TODO: Replace with linked list to allow popping at front
     tokens: Vec<Token>,
     index: usize,
+    line_count: u32,
 }
 
 #[derive(PartialEq, Eq)]
@@ -127,7 +129,7 @@ enum Associative {
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Parser { tokens, index: 0 }
+        Parser { tokens, index: 0, line_count: 1 }
     }
     fn peek(&self) -> Option<&Token> {
         return self.tokens.get(self.index + 1);
@@ -138,48 +140,69 @@ impl Parser {
     fn get_current_token(&self) -> Option<&Token> {
         return self.tokens.get(self.index);
     }
-    pub fn parse(&mut self) -> AstNode {
+    pub fn parse(&mut self) -> Result<AstNode, ParserError> {
         let mut statements: Vec<AstNode> = vec![];
 
-        while let Some(t) = self.get_current_token() {
-            if let Some(stmt) = self.parse_statement() {
-                statements.push(stmt);
+        while let Some(_) = self.get_current_token() {
+            match self.parse_statement() {
+                Ok(stmt) => {
+                    if let Some(stmt) = stmt {
+                        statements.push(stmt);
+                    }
+                }
+                Err(e) => {
+                    return Err(ParserError::new(e, self.line_count));
+                }
             }
         }
 
-        AstNode::Program(statements)
+        Ok(AstNode::Program(statements))
     }
     fn advance(&mut self) {
         self.index += 1;
     }
-    fn parse_statement(&mut self) -> Option<AstNode> {
-        return match self.get_current_token() {
-            Some(Token::VariableOrFunction(_)) => { Some(self.parse_asignments_and_functions()) }
-            Some(Token::Local) => { Some(self.parse_asignments_and_functions()) }
-            Some(Token::EndLine) => {
+    fn advance_token(&mut self, token: Token) -> Result<(), String> {
+        if let Some(_) = self.get_current_token() {
+            if
+                std::mem::discriminant(self.get_current_token().unwrap()) ==
+                std::mem::discriminant(&token)
+            {
                 self.advance();
-                None
             }
-            Some(Token::Do) => { Some(self.parse_do_end_scope()) }
-            Some(Token::While) => { Some(self.parse_while()) }
-            Some(Token::If) => { Some(self.parse_if()) }
-            Some(Token::For) => { Some(self.parse_for()) }
-            Some(Token::Repeat) => { Some(self.parse_repeat_until()) }
-            Some(Token::Function) => { Some(self.parse_function()) }
+        }
+        Err(format!("Types {:?} and {:?} don't match", self.get_current_token(), token))
+    }
+    fn parse_statement(&mut self) -> Result<Option<AstNode>, String> {
+        return match self.get_current_token() {
+            Some(Token::VariableOrFunction(_)) => {
+                Ok(Some(self.parse_asignments_and_functions()?))
+            }
+            Some(Token::Local) => { Ok(Some(self.parse_asignments_and_functions()?)) }
+            Some(Token::EndLine) => {
+                self.line_count += 1;
+                self.advance();
+                Ok(None)
+            }
+            Some(Token::Do) => { Ok(Some(self.parse_do_end_scope()?)) }
+            Some(Token::While) => { Ok(Some(self.parse_while()?)) }
+            Some(Token::If) => { Ok(Some(self.parse_if()?)) }
+            Some(Token::For) => { Ok(Some(self.parse_for()?)) }
+            Some(Token::Repeat) => { Ok(Some(self.parse_repeat_until()?)) }
+            Some(Token::Function) => { Ok(Some(self.parse_function()?)) }
             Some(Token::Break) => {
                 self.advance();
-                return Some(AstNode::Break);
+                return Ok(Some(AstNode::Break));
             }
             Some(Token::Continue) => {
                 self.advance();
-                return Some(AstNode::Continue);
+                return Ok(Some(AstNode::Continue));
             }
-            Some(Token::Return) => Some(self.parse_return()),
-            Some(t) => None,
-            None => None,
+            Some(Token::Return) => Ok(Some(self.parse_return()?)),
+            Some(t) => Ok(None),
+            None => Ok(None),
         };
     }
-    fn parse_repeat_until(&mut self) -> AstNode {
+    fn parse_repeat_until(&mut self) -> Result<AstNode, String> {
         if let Some(Token::Repeat) = self.get_current_token() {
             self.advance();
             let mut stmts = vec![];
@@ -188,20 +211,20 @@ impl Parser {
                     self.advance();
                     break;
                 }
-                if let Some(v) = self.parse_statement() {
+                if let Some(v) = self.parse_statement()? {
                     stmts.push(v);
                 }
             }
             let expr = self.parse_expression();
 
-            return AstNode::RepeatUntil {
-                condition: Box::new(expr),
+            return Ok(AstNode::RepeatUntil {
+                condition: Box::new(expr?),
                 scope: Box::new(AstNode::Scope { stmts: stmts }),
-            };
+            });
         }
-        unreachable!("Wrong repeat until syntax");
+        Err("Invalid call to parse repeat until".to_string())
     }
-    fn parse_for(&mut self) -> AstNode {
+    fn parse_for(&mut self) -> Result<AstNode, String> {
         /*
         for i in start,stop,step do
             <SCOPE>
@@ -229,37 +252,37 @@ impl Parser {
                         let mut step: AstNode = AstNode::Literal(ParsedValue::Int(1));
                         if let Some(Token::Comma) = self.get_current_token() {
                             self.advance();
-                            step = self.parse_expression();
+                            step = self.parse_expression()?;
                         }
                         let for_type = ForType::Range {
-                            start: Box::new(start),
-                            end: Box::new(end),
+                            start: Box::new(start?),
+                            end: Box::new(end?),
                             step: Box::new(step),
                         };
 
                         let scope = self.parse_do_end_scope();
-                        return AstNode::For {
+                        return Ok(AstNode::For {
                             variable: name.clone(),
                             for_type,
-                            scope: Box::new(scope),
-                        };
+                            scope: Box::new(scope?),
+                        });
                     } else {
                         let expr = start; // It's not called start here
-                        let for_type = ForType::Generic(Box::new(expr));
+                        let for_type = ForType::Generic(Box::new(expr?));
 
-                        return AstNode::For {
+                        return Ok(AstNode::For {
                             variable: name.clone(),
                             for_type,
-                            scope: Box::new(self.parse_do_end_scope()),
-                        };
+                            scope: Box::new(self.parse_do_end_scope()?),
+                        });
                     }
                 }
             }
         }
-        panic!("Wrong syntax for a for loop, are you dumb?")
+        return Err("Invalid for loop syntax".to_string());
     }
 
-    fn parse_if(&mut self) -> AstNode {
+    fn parse_if(&mut self) -> Result<AstNode, String> {
         if let Some(Token::If) = self.get_current_token() {
             self.advance();
             let expr = self.parse_expression();
@@ -270,47 +293,48 @@ impl Parser {
                     if let Some(Token::End) = self.get_current_token() {
                         self.advance();
                         let scope = AstNode::Scope { stmts: stmts };
-                        return AstNode::If {
-                            condition: Box::new(expr),
+                        return Ok(AstNode::If {
+                            condition: Box::new(expr?),
                             scope: Box::new(scope),
                             elseif: vec![],
                             else_scope: Box::new(None),
-                        };
+                        });
                     }
                     if let Some(Token::ElseIf) = self.get_current_token() {
                         let scope = AstNode::Scope { stmts: stmts };
                         let mut elseifs = vec![];
-                        while let Some(elif_node) = self.parse_else_if_branches() {
+                        while let Some(elif_node) = self.parse_else_if_branches()? {
                             println!("Elif NOde: {:#?}", elif_node);
                             elseifs.push(elif_node);
                         }
-                        return AstNode::If {
-                            condition: Box::new(expr),
+                        return Ok(AstNode::If {
+                            condition: Box::new(expr?),
                             scope: Box::new(scope),
                             elseif: elseifs,
-                            else_scope: Box::new(self.parse_else_branch()),
-                        };
+                            else_scope: Box::new(self.parse_else_branch()?),
+                        });
                     }
                     if let Some(Token::Else) = self.get_current_token() {
                         let scope = AstNode::Scope { stmts: stmts };
-                        return AstNode::If {
-                            condition: Box::new(expr),
+                        return Ok(AstNode::If {
+                            condition: Box::new(expr?),
                             scope: Box::new(scope),
                             elseif: vec![],
-                            else_scope: Box::new(self.parse_else_branch()),
-                        };
+                            else_scope: Box::new(self.parse_else_branch()?),
+                        });
                     }
-                    if let Some(v) = self.parse_statement() {
+                    if let Some(v) = self.parse_statement()? {
+                        println!("ASD{:?}", v);
                         stmts.push(v);
                     }
                 }
             } else {
-                panic!("Expected then after expression");
+                return Err("Expected token then after expression".to_string());
             }
         }
-        unreachable!("NOnon")
+        return Err("Invalid call to parse if".to_string());
     }
-    fn parse_else_if_branches(&mut self) -> Option<AstNode> {
+    fn parse_else_if_branches(&mut self) -> Result<Option<AstNode>, String> {
         if let Some(Token::ElseIf) = self.get_current_token() {
             println!("Ječp");
             self.advance();
@@ -326,43 +350,49 @@ impl Parser {
                         self.advance();
                         let scope = AstNode::Scope { stmts: stmts };
                         println!("jeele");
-                        return Some(AstNode::If {
-                            condition: Box::new(expr),
-                            scope: Box::new(scope),
-                            elseif: vec![],
-                            else_scope: Box::new(None),
-                        });
+                        return Ok(
+                            Some(AstNode::If {
+                                condition: Box::new(expr?),
+                                scope: Box::new(scope),
+                                elseif: vec![],
+                                else_scope: Box::new(None),
+                            })
+                        );
                     }
                     if let Some(Token::ElseIf) = self.get_current_token() {
                         let scope = AstNode::Scope { stmts: stmts };
-                        return Some(AstNode::If {
-                            condition: Box::new(expr),
-                            scope: Box::new(scope),
-                            elseif: vec![],
-                            else_scope: Box::new(None),
-                        });
+                        return Ok(
+                            Some(AstNode::If {
+                                condition: Box::new(expr?),
+                                scope: Box::new(scope),
+                                elseif: vec![],
+                                else_scope: Box::new(None),
+                            })
+                        );
                     }
                     if let Some(Token::Else) = self.get_current_token() {
                         let scope = AstNode::Scope { stmts: stmts };
-                        return Some(AstNode::If {
-                            condition: Box::new(expr),
-                            scope: Box::new(scope),
-                            elseif: vec![],
-                            else_scope: Box::new(None),
-                        });
+                        return Ok(
+                            Some(AstNode::If {
+                                condition: Box::new(expr?),
+                                scope: Box::new(scope),
+                                elseif: vec![],
+                                else_scope: Box::new(None),
+                            })
+                        );
                     }
 
-                    if let Some(v) = self.parse_statement() {
+                    if let Some(v) = self.parse_statement()? {
                         stmts.push(v);
                     }
                 }
             } else {
-                panic!("Expected then after expression");
+                return Err("Expected then after expression".to_string());
             }
         }
-        None
+        Ok(None)
     }
-    fn parse_else_branch(&mut self) -> Option<AstNode> {
+    fn parse_else_branch(&mut self) -> Result<Option<AstNode>, String> {
         if let Some(Token::Else) = self.get_current_token() {
             self.advance();
             let mut stmts = vec![];
@@ -370,28 +400,28 @@ impl Parser {
                 if let Some(Token::End) = self.get_current_token() {
                     self.advance();
                     let scope = AstNode::Scope { stmts: stmts };
-                    return Some(scope);
+                    return Ok(Some(scope));
                 }
-                if let Some(v) = self.parse_statement() {
+                if let Some(v) = self.parse_statement()? {
                     stmts.push(v);
                 }
             }
         }
-        None
+        Ok(None)
     }
-    fn parse_while(&mut self) -> AstNode {
+    fn parse_while(&mut self) -> Result<AstNode, String> {
         if let Some(Token::While) = self.get_current_token() {
             self.advance();
-            let expr = Box::new(self.parse_expression());
+            let expr = Box::new(self.parse_expression()?);
             println!("asd{:?}", expr);
-            return AstNode::While {
+            return Ok(AstNode::While {
                 condition: expr,
-                scope: Box::new(self.parse_do_end_scope()),
-            };
+                scope: Box::new(self.parse_do_end_scope()?),
+            });
         }
-        unreachable!("Nononoo");
+        return Err("Invalid call to parse while".to_string());
     }
-    fn parse_do_end_scope(&mut self) -> AstNode {
+    fn parse_do_end_scope(&mut self) -> Result<AstNode, String> {
         println!("asdasdasd{:?}", self.get_current_token());
         if let Some(Token::Do) = self.get_current_token() {
             self.advance();
@@ -399,17 +429,17 @@ impl Parser {
             loop {
                 if let Some(Token::End) = self.get_current_token() {
                     self.advance();
-                    return AstNode::Scope { stmts: stmts };
+                    return Ok(AstNode::Scope { stmts: stmts });
                 }
-                if let Some(v) = self.parse_statement() {
+                if let Some(v) = self.parse_statement()? {
                     stmts.push(v);
                 }
             }
         }
-        unreachable!("Should not reach if code is okie dokie")
+        Err("Invalid call to parse do end".to_string())
     }
 
-    fn parse_asignments_and_functions(&mut self) -> AstNode {
+    fn parse_asignments_and_functions(&mut self) -> Result<AstNode, String> {
         let is_local = match self.get_current_token() {
             Some(Token::Local) => {
                 self.advance();
@@ -418,9 +448,11 @@ impl Parser {
             _ => false,
         };
 
-        let target = match self.parse_target() {
+        let target = match self.parse_target()? {
             Some(t) => t,
-            None => panic!("Invalid target"),
+            None => {
+                return Err("Target could not be parsed".to_string());
+            }
         };
 
         if let Some(Token::OpenParen) = self.get_current_token() {
@@ -431,9 +463,9 @@ impl Parser {
                 println!("{:?}", self.get_current_token());
                 if let Some(Token::CloseParen) = self.get_current_token() {
                     self.advance();
-                    return AstNode::FunctionCall { name: Box::new(target), args: args };
+                    return Ok(AstNode::FunctionCall { name: Box::new(target), args: args });
                 }
-                args.push(self.parse_expression());
+                args.push(self.parse_expression()?);
 
                 if let Some(Token::Comma) = self.get_current_token() {
                     self.advance(); // Skip ,
@@ -441,7 +473,7 @@ impl Parser {
                 }
 
                 self.advance();
-                return AstNode::FunctionCall { name: Box::new(target), args: args };
+                return Ok(AstNode::FunctionCall { name: Box::new(target), args: args });
             }
         }
         if let Some(Token::OperatorAssign(op)) = self.get_current_token() {
@@ -452,30 +484,30 @@ impl Parser {
             let expr = AstNode::BinaryOp {
                 op: op,
                 lhs: Box::new(target.clone()),
-                rhs: Box::new(rhs),
+                rhs: Box::new(rhs?),
             };
 
-            return AstNode::Assignment {
+            return Ok(AstNode::Assignment {
                 is_local: false,
                 variable: Box::new(target),
                 rhs: Box::new(expr),
-            };
+            });
         }
         if let Some(Token::Set) = self.get_current_token() {
             self.advance();
 
-            return AstNode::Assignment {
+            return Ok(AstNode::Assignment {
                 is_local: is_local,
                 variable: Box::new(target),
-                rhs: Box::new(self.parse_expression()),
-            };
+                rhs: Box::new(self.parse_expression()?),
+            });
         }
 
-        unreachable!("dlsfjkf")
+        return Err("Could not parse assignment or function call".to_string());
 
         //return self.parse_assignment();
     }
-    fn parse_expression(&mut self) -> AstNode {
+    fn parse_expression(&mut self) -> Result<AstNode, String> {
         // FIXME: Make it parse expression not just a number
         // println!("{:?}", self.get_current_token());
         // if let Some(Token::EndLine) = self.peek() {
@@ -496,14 +528,14 @@ impl Parser {
         // return node;
         return self.parse_precedence_climbing(0);
     }
-    fn parse_precedence_climbing(&mut self, min_prec: u8) -> AstNode {
-        let mut res = self.parse_factor();
+    fn parse_precedence_climbing(&mut self, min_prec: u8) -> Result<AstNode, String> {
+        let mut res = self.parse_factor()?;
         let mut next_min_precedence;
         while let Some(Token::Operator(op)) = self.get_current_token() {
             let (prec, assoc) = Parser::get_precedence(op);
 
             if prec < min_prec {
-                return res;
+                return Ok(res);
             }
             if assoc == Associative::LEFT {
                 next_min_precedence = prec + 1;
@@ -513,9 +545,9 @@ impl Parser {
             let op = op.clone();
             self.advance();
             let rhs = self.parse_precedence_climbing(next_min_precedence);
-            res = AstNode::BinaryOp { op: op.clone(), lhs: Box::new(res), rhs: Box::new(rhs) };
+            res = AstNode::BinaryOp { op: op.clone(), lhs: Box::new(res), rhs: Box::new(rhs?) };
         }
-        res
+        Ok(res)
     }
     fn get_precedence(op: &Operator) -> (u8, Associative) {
         match op {
@@ -540,14 +572,14 @@ impl Parser {
             Operator::Or => (0, Associative::LEFT),
         }
     }
-    fn parse_factor(&mut self) -> AstNode {
+    fn parse_factor(&mut self) -> Result<AstNode, String> {
         if let Some(Token::Value(v)) = self.get_current_token() {
             let v = v.clone();
             self.advance();
-            return AstNode::Literal(v.into());
+            return Ok(AstNode::Literal(v.into()));
         }
 
-        if let Some(target) = self.parse_target() {
+        if let Some(target) = self.parse_target()? {
             println!("Curur: {:?}", self.get_current_token());
             if let Some(Token::OpenParen) = self.get_current_token() {
                 self.advance();
@@ -557,21 +589,22 @@ impl Parser {
                 loop {
                     println!("Self: {:?}", self.get_current_token());
                     if let Some(Token::CloseParen) = self.get_current_token() {
-                        return AstNode::FunctionCall { name: Box::new(target), args: args };
+                        return Ok(AstNode::FunctionCall { name: Box::new(target), args: args });
                     }
-                    args.push(self.parse_expression());
+                    args.push(self.parse_expression()?);
 
                     if let Some(Token::Comma) = self.get_current_token() {
                         self.advance(); // Skip ,
+
                         continue;
                     }
                     println!("Selsssf: {:?}", self.get_current_token());
                     self.advance();
-                    return AstNode::FunctionCall { name: Box::new(target), args: args };
+                    return Ok(AstNode::FunctionCall { name: Box::new(target), args: args });
                 }
             }
 
-            return target;
+            return Ok(target);
         }
 
         if let Some(Token::OpenParen) = self.get_current_token() {
@@ -581,7 +614,7 @@ impl Parser {
                 self.advance();
                 return expr;
             }
-            eprintln!("Unmatched (");
+            return Err("Expected )".to_string());
         }
 
         if let Some(Token::Operator(Operator::Subtract)) = self.get_current_token() {
@@ -589,25 +622,25 @@ impl Parser {
             println!("crr tokn: {:?}", self.get_current_token());
 
             let value = self.parse_factor();
-            return AstNode::UnaryOp { op: UnaryOp::Negative, value: Box::new(value) };
+            return Ok(AstNode::UnaryOp { op: UnaryOp::Negative, value: Box::new(value?) });
         }
         if let Some(Token::Operator(Operator::BitwiseNot)) = self.get_current_token() {
             self.advance();
             println!("crr tokn: {:?}", self.get_current_token());
 
             let value = self.parse_factor();
-            return AstNode::UnaryOp { op: UnaryOp::BitwiseNot, value: Box::new(value) };
+            return Ok(AstNode::UnaryOp { op: UnaryOp::BitwiseNot, value: Box::new(value?) });
         }
 
         if let Some(Token::Len) = self.get_current_token() {
             self.advance();
             let value = self.parse_factor();
-            return AstNode::UnaryOp { op: UnaryOp::Length, value: Box::new(value) };
+            return Ok(AstNode::UnaryOp { op: UnaryOp::Length, value: Box::new(value?) });
         }
         if let Some(Token::Not) = self.get_current_token() {
             self.advance();
             let value = self.parse_factor();
-            return AstNode::UnaryOp { op: UnaryOp::Not, value: Box::new(value) };
+            return Ok(AstNode::UnaryOp { op: UnaryOp::Not, value: Box::new(value?) });
         }
         // if let Some(Token::OpenSquare) = self.get_current_token() {
         //     self.advance();
@@ -631,13 +664,13 @@ impl Parser {
         //     }
         // }
         if let Some(Token::OpenCurly) = self.get_current_token() {
-            return self.parse_table();
+            return Ok(self.parse_table()?);
         }
 
-        AstNode::Literal(ParsedValue::Nil)
+        Err("Could not parse factor".to_string())
     }
 
-    fn parse_table(&mut self) -> AstNode {
+    fn parse_table(&mut self) -> Result<AstNode, String> {
         if let Some(Token::OpenCurly) = self.get_current_token() {
             let mut elements: Vec<AstNode> = vec![];
             let mut map: Vec<(AstNode, AstNode)> = vec![];
@@ -647,7 +680,7 @@ impl Parser {
                     self.advance();
                     break;
                 }
-                match self.parse_table_entry() {
+                match self.parse_table_entry()? {
                     TableEntry::Element(el) => elements.push(el),
                     TableEntry::KeyValue(key, value) => map.push((key, value)),
                 }
@@ -657,12 +690,12 @@ impl Parser {
                 }
             }
             let table = ParsedValue::Table { array: elements, map };
-            return AstNode::Literal(table);
+            return Ok(AstNode::Literal(table));
         }
-        unimplemented!("JOjoj")
+        Err("Invalid table constructor".to_string())
     }
 
-    fn parse_table_entry(&mut self) -> TableEntry {
+    fn parse_table_entry(&mut self) -> Result<TableEntry, String> {
         if let Some(Token::VariableOrFunction(name)) = self.get_current_token() {
             let name = name.clone();
             if let Some(Token::Set) = self.peek() {
@@ -672,9 +705,9 @@ impl Parser {
 
                 let entry = TableEntry::KeyValue(
                     AstNode::Literal(ParsedValue::String(name.clone())),
-                    expr
+                    expr?
                 );
-                return entry;
+                return Ok(entry);
             }
         }
         if let Some(Token::OpenSquare) = self.get_current_token() {
@@ -684,24 +717,26 @@ impl Parser {
             if let Some(Token::Set) = self.get_current_token() {
                 self.advance();
                 let expr_value = self.parse_expression();
-                return TableEntry::KeyValue(expr, expr_value);
+                return Ok(TableEntry::KeyValue(expr?, expr_value?));
             }
         }
-        return TableEntry::Element(self.parse_expression());
+        return Ok(TableEntry::Element(self.parse_expression()?));
     }
 
-    fn parse_function(&mut self) -> AstNode {
+    fn parse_function(&mut self) -> Result<AstNode, String> {
         if let Some(Token::Function) = self.get_current_token() {
             println!("hello");
             self.advance();
             let name = match self.get_current_token() {
                 Some(Token::VariableOrFunction(n)) => n.clone(),
-                _ => panic!("Wrong syntax expected name"),
+                _ => {
+                    return Err("Invalid syntax for a function call expected name".to_string());
+                }
             };
             self.advance();
             if let Some(Token::OpenParen) = self.get_current_token() {
             } else {
-                panic!("( not found");
+                return Err("Expected (".to_string());
             }
             self.advance();
             println!("{:?}", self.get_current_token());
@@ -715,7 +750,7 @@ impl Parser {
                     args.push(a.clone());
                     self.advance();
                 } else {
-                    self.advance(); // FIXME: Should check if comma
+                    self.advance_token(Token::Comma)?;
                 }
             }
             let mut stmts: Vec<AstNode> = vec![];
@@ -725,21 +760,21 @@ impl Parser {
                     self.advance();
                     break;
                 }
-                if let Some(stmt) = self.parse_statement() {
+                if let Some(stmt) = self.parse_statement()? {
                     stmts.push(stmt);
                 }
             }
 
-            return AstNode::FunctionDeclaration {
+            return Ok(AstNode::FunctionDeclaration {
                 name,
                 arguments: args,
                 body: Box::new(AstNode::Scope { stmts }),
-            };
+            });
         }
         unreachable!("Nononon")
     }
 
-    fn parse_target(&mut self) -> Option<AstNode> {
+    fn parse_target(&mut self) -> Result<Option<AstNode>, String> {
         if let Some(Token::VariableOrFunction(name)) = self.get_current_token() {
             let name = name.clone();
             let mut base = AstNode::Variable(name);
@@ -761,7 +796,7 @@ impl Parser {
                     }
                     Some(Token::OpenSquare) => {
                         self.advance();
-                        let expr = self.parse_expression();
+                        let expr = self.parse_expression()?;
                         if let Some(Token::CloseSquare) = self.get_current_token() {
                             let indexed = AstNode::Index {
                                 base: Box::new(base),
@@ -776,16 +811,16 @@ impl Parser {
                     }
                 }
             }
-            return Some(base);
+            return Ok(Some(base));
         }
-        None
+        return Ok(None);
     }
 
-    fn parse_return(&mut self) -> AstNode {
+    fn parse_return(&mut self) -> Result<AstNode, String> {
         if let Some(Token::Return) = self.get_current_token() {
             self.advance();
-            return AstNode::Return { expr: Box::new(self.parse_expression()) };
+            return Ok(AstNode::Return { expr: Box::new(self.parse_expression()?) });
         }
-        unreachable!("Incorrect return statement")
+        Err("Invalid call to parse return".to_string())
     }
 }
