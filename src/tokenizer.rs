@@ -129,22 +129,26 @@ impl Tokenizer {
                             if x == ']' && *iterator.peek().unwrap_or(&'x') == ']' {
                                 iterator.next();
 
+                                self.add_token(Some(Token::EndLine));
                                 continue 'char_iter;
                             }
                         }
                     }
                     // End of file
                     // Probably should throw error: Unmatched block comment
+                    self.add_token(Some(Token::EndLine));
                     buf.clear();
                     continue 'char_iter; // Break should probably do the same
                 } else {
                     while let Some(c) = iterator.next() {
                         if c == '\n' {
                             buf.clear();
+                            self.add_token(Some(Token::EndLine));
                             continue 'char_iter;
                         }
                     }
                 }
+                self.add_token(Some(Token::EndLine));
                 continue 'char_iter;
             }
             if SEPERATORS.contains(&c.to_string().as_str()) {
