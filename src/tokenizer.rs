@@ -121,15 +121,21 @@ impl Tokenizer {
                 buf.clear();
                 let x = iterator.next().unwrap_or('x');
                 if x == '[' && *iterator.peek().unwrap_or(&'x') == '[' {
+                    let mut line_count = 0;
                     iterator.next();
                     while let Some(c) = iterator.next() {
+                        if c == '\n' {
+                            line_count += 1;
+                        }
                         if c == '-' && *iterator.peek().unwrap_or(&'x') == '-' {
                             iterator.next();
                             let x = iterator.next().unwrap_or('x');
                             if x == ']' && *iterator.peek().unwrap_or(&'x') == ']' {
                                 iterator.next();
 
-                                self.add_token(Some(Token::EndLine));
+                                for _ in 0..line_count {
+                                    self.add_token(Some(Token::EndLine));
+                                }
                                 continue 'char_iter;
                             }
                         }

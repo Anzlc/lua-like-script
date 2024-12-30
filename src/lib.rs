@@ -26,7 +26,7 @@ mod tests {
         let code = "-- Comment";
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());
-        assert_eq!(tokenizer.get_tokens(), []);
+        assert_eq!(tokenizer.get_tokens(), [Token::EndLine]);
     }
     #[test]
     fn tokenizer_block_comment() {
@@ -38,7 +38,12 @@ mod tests {
          --]]";
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());
-        assert_eq!(tokenizer.get_tokens(), []);
+        assert_eq!(tokenizer.get_tokens(), [
+            Token::EndLine,
+            Token::EndLine,
+            Token::EndLine,
+            Token::EndLine,
+        ]);
     }
     #[test]
     fn tokenizer_equation() {
@@ -285,11 +290,7 @@ mod tests {
             
         --local x = {1,2,3, [\"Hello\"]=10, name=10, name=\"10\", hello={10}}
         --print(x[1][1][1])
-        if x < 10 then
-            print(x[10].key,10   , 12
-        end
-    
-
+        print(10)
         ";
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());

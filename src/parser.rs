@@ -168,9 +168,10 @@ impl Parser {
                 std::mem::discriminant(&token)
             {
                 self.advance();
+                return Ok(());
             }
         }
-        Err(format!("Types {:?} and {:?} don't match", self.get_current_token(), token))
+        Err(format!("Expected {:?}, got {:?}", token, self.get_current_token()))
     }
     fn parse_statement(&mut self) -> Result<Option<AstNode>, String> {
         return match self.get_current_token() {
@@ -462,7 +463,7 @@ impl Parser {
             loop {
                 println!("{:?}", self.get_current_token());
                 if let Some(Token::CloseParen) = self.get_current_token() {
-                    self.advance();
+                    self.advance_token(Token::CloseParen)?;
                     return Ok(AstNode::FunctionCall { name: Box::new(target), args: args });
                 }
                 args.push(self.parse_expression()?);
@@ -472,7 +473,7 @@ impl Parser {
                     continue;
                 }
 
-                self.advance();
+                self.advance_token(Token::CloseParen)?;
                 return Ok(AstNode::FunctionCall { name: Box::new(target), args: args });
             }
         }
