@@ -290,7 +290,7 @@ mod tests {
             
         --local x = {1,2,3, [\"Hello\"]=10, name=10, name=\"10\", hello={10}}
         --print(x[1][1][1])
-        print(10)
+        sys.set_language(\"sl\")
         ";
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());
