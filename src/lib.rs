@@ -74,14 +74,14 @@ mod tests {
         let ast = AstNode::Program(
             vec![AstNode::Assignment {
                 is_local: false,
-                variable: Box::new(AstNode::Variable("x".to_string())),
+                target: Box::new(AstNode::Variable("x".to_string())),
                 rhs: Box::new(AstNode::BinaryOp {
                     op: tokenizer::Operator::Multiply,
                     lhs: Box::new(AstNode::BinaryOp {
                         op: tokenizer::Operator::Add,
                         lhs: Box::new(AstNode::Literal(ParsedValue::Int(10))),
                         rhs: Box::new(AstNode::FunctionCall {
-                            name: Box::new(AstNode::Variable("y".to_string())),
+                            target: Box::new(AstNode::Variable("y".to_string())),
                             args: vec![
                                 AstNode::Literal(ParsedValue::Int(1)),
                                 AstNode::Literal(ParsedValue::Int(10)),
@@ -118,7 +118,7 @@ mod tests {
         let ast = AstNode::Program(
             vec![AstNode::Assignment {
                 is_local: true,
-                variable: Box::new(AstNode::Variable("x".to_string())),
+                target: Box::new(AstNode::Variable("x".to_string())),
                 rhs: Box::new(AstNode::Literal(ParsedValue::Int(10))),
             }]
         );
@@ -146,7 +146,7 @@ mod tests {
                 },
                 scope: Box::new(AstNode::Scope {
                     stmts: vec![AstNode::FunctionCall {
-                        name: Box::new(AstNode::Variable("print".to_string())),
+                        target: Box::new(AstNode::Variable("print".to_string())),
                         args: vec![AstNode::Variable("i".to_string())],
                     }],
                 }),
@@ -171,7 +171,7 @@ mod tests {
                 condition: Box::new(AstNode::Literal(ParsedValue::Bool(true))),
                 scope: Box::new(AstNode::Scope {
                     stmts: vec![AstNode::FunctionCall {
-                        name: Box::new(AstNode::Variable("print".to_string())),
+                        target: Box::new(AstNode::Variable("print".to_string())),
                         args: vec![AstNode::Variable("i".to_string())],
                     }],
                 }),
@@ -196,7 +196,7 @@ mod tests {
                 condition: Box::new(AstNode::Literal(ParsedValue::Bool(true))),
                 scope: Box::new(AstNode::Scope {
                     stmts: vec![AstNode::FunctionCall {
-                        name: Box::new(AstNode::Variable("print".to_string())),
+                        target: Box::new(AstNode::Variable("print".to_string())),
                         args: vec![AstNode::Variable("i".to_string())],
                     }],
                 }),
@@ -221,7 +221,7 @@ mod tests {
                 condition: Box::new(AstNode::Literal(ParsedValue::Bool(true))),
                 scope: Box::new(AstNode::Scope {
                     stmts: vec![AstNode::FunctionCall {
-                        name: Box::new(AstNode::Variable("print".to_string())),
+                        target: Box::new(AstNode::Variable("print".to_string())),
                         args: vec![AstNode::Literal(ParsedValue::Int(1))],
                     }],
                 }),
@@ -252,7 +252,7 @@ mod tests {
             vec![
                 AstNode::Assignment {
                     is_local: true,
-                    variable: AstNode::Variable("arr".to_string()).into(),
+                    target: AstNode::Variable("arr".to_string()).into(),
                     rhs: AstNode::Literal(ParsedValue::Table {
                         array: Vec::new(),
                         map: Vec::new(),
@@ -260,7 +260,7 @@ mod tests {
                 },
                 AstNode::Assignment {
                     is_local: false,
-                    variable: (AstNode::Index {
+                    target: (AstNode::Index {
                         base: AstNode::Variable("arr".to_string()).into(),
                         index: AstNode::Literal(ParsedValue::Int(1)).into(),
                     }).into(),
@@ -268,7 +268,7 @@ mod tests {
                 },
                 AstNode::Assignment {
                     is_local: false,
-                    variable: (AstNode::Index {
+                    target: (AstNode::Index {
                         base: AstNode::Variable("arr".to_string()).into(),
                         index: AstNode::Literal(ParsedValue::Int(2)).into(),
                     }).into(),
@@ -291,6 +291,7 @@ mod tests {
         --local x = {1,2,3, [\"Hello\"]=10, name=10, name=\"10\", hello={10}}
         --print(x[1][1][1])
         sys.set_language(\"sl\")
+        
         ";
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());

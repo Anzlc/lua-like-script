@@ -13,11 +13,11 @@ pub enum AstNode {
     },
     Assignment {
         is_local: bool,
-        variable: Box<AstNode>,
+        target: Box<AstNode>,
         rhs: Box<AstNode>,
     },
     FunctionCall {
-        name: Box<AstNode>,
+        target: Box<AstNode>,
         args: Vec<AstNode>,
     },
     Variable(String),
@@ -464,7 +464,7 @@ impl Parser {
                 println!("{:?}", self.get_current_token());
                 if let Some(Token::CloseParen) = self.get_current_token() {
                     self.advance_token(Token::CloseParen)?;
-                    return Ok(AstNode::FunctionCall { name: Box::new(target), args: args });
+                    return Ok(AstNode::FunctionCall { target: Box::new(target), args: args });
                 }
                 args.push(self.parse_expression()?);
 
@@ -474,7 +474,7 @@ impl Parser {
                 }
 
                 self.advance_token(Token::CloseParen)?;
-                return Ok(AstNode::FunctionCall { name: Box::new(target), args: args });
+                return Ok(AstNode::FunctionCall { target: Box::new(target), args: args });
             }
         }
         if let Some(Token::OperatorAssign(op)) = self.get_current_token() {
@@ -490,7 +490,7 @@ impl Parser {
 
             return Ok(AstNode::Assignment {
                 is_local: false,
-                variable: Box::new(target),
+                target: Box::new(target),
                 rhs: Box::new(expr),
             });
         }
@@ -499,7 +499,7 @@ impl Parser {
 
             return Ok(AstNode::Assignment {
                 is_local: is_local,
-                variable: Box::new(target),
+                target: Box::new(target),
                 rhs: Box::new(self.parse_expression()?),
             });
         }
@@ -590,7 +590,7 @@ impl Parser {
                 loop {
                     println!("Self: {:?}", self.get_current_token());
                     if let Some(Token::CloseParen) = self.get_current_token() {
-                        return Ok(AstNode::FunctionCall { name: Box::new(target), args: args });
+                        return Ok(AstNode::FunctionCall { target: Box::new(target), args: args });
                     }
                     args.push(self.parse_expression()?);
 
@@ -601,7 +601,7 @@ impl Parser {
                     }
                     println!("Selsssf: {:?}", self.get_current_token());
                     self.advance();
-                    return Ok(AstNode::FunctionCall { name: Box::new(target), args: args });
+                    return Ok(AstNode::FunctionCall { target: Box::new(target), args: args });
                 }
             }
 
