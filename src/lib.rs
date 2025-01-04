@@ -3,6 +3,7 @@ mod parser;
 use parser::{ Parser, AstNode, ParsedValue, ForType };
 mod tokenizer;
 mod errors;
+mod eval;
 
 #[cfg(test)]
 mod tests {
