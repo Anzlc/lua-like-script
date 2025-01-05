@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::eval::value::Value;
 
 pub struct GarbageCollector {
-    heap: HashMap<u32, Value>,
+    heap: HashMap<u32, GcObject>,
 }
 
 impl GarbageCollector {
@@ -15,8 +15,15 @@ impl GarbageCollector {
         let id = GarbageCollector::get_id(&value);
         println!("Id: {}", id);
 
-        self.heap.insert(id, value);
+        self.heap.insert(id, GcObject { value, marked: false });
         GcRef(id)
+    }
+
+    pub fn get(&mut self, gc_ref: GcRef) -> Option<&mut Value> {
+        if let Some(v) = self.heap.get_mut(&gc_ref.0) {
+            return Some(&mut v.value);
+        }
+        None
     }
 
     fn get_id(value: &Value) -> u32 {
@@ -31,4 +38,5 @@ pub struct GcObject {
     marked: bool,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct GcRef(u32);
