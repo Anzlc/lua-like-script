@@ -1,6 +1,6 @@
 use std::{ cell::RefCell, collections::HashMap, rc::Rc };
 
-use crate::eval::value::Value;
+use super::value::Value;
 
 use super::gc::GcRef;
 

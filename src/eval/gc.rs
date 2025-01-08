@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use crate::eval::value::Value;
-
-use super::environment::Environment;
+use super::value::Value;
 
 pub struct GarbageCollector {
     heap: HashMap<GcRef, GcObject>,
