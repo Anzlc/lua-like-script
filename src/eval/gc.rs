@@ -2,8 +2,10 @@ use std::collections::HashMap;
 
 use crate::eval::value::Value;
 
+use super::environment::Environment;
+
 pub struct GarbageCollector {
-    heap: HashMap<u32, GcObject>,
+    heap: HashMap<GcRef, GcObject>,
 }
 
 impl GarbageCollector {
@@ -15,12 +17,12 @@ impl GarbageCollector {
         let id = GarbageCollector::get_id(&value);
         println!("Id: {}", id);
 
-        self.heap.insert(id, GcObject { value, marked: false });
+        self.heap.insert(GcRef(id), GcObject { value, marked: false, children: vec![] });
         GcRef(id)
     }
 
     pub fn get(&mut self, gc_ref: GcRef) -> Option<&mut Value> {
-        if let Some(v) = self.heap.get_mut(&gc_ref.0) {
+        if let Some(v) = self.heap.get_mut(&gc_ref) {
             return Some(&mut v.value);
         }
         None
@@ -31,12 +33,45 @@ impl GarbageCollector {
         let id = ptr as u32;
         return id >> 1;
     }
+    fn mark_root(&mut self, root: &GcRef) {
+        if let Some(obj) = self.heap.get_mut(root) {
+            obj.mark();
+            let children = obj.children.clone();
+
+            for c in children {
+                self.mark_root(&c);
+            }
+        }
+    }
+    pub fn collect_garbage(&mut self, roots: &[GcRef]) {
+        // Mark phase
+        for root in roots {
+            self.mark_root(root);
+        }
+        // Sweep phase
+        self.heap.retain(|_, v| v.marked);
+
+        //Reset
+        for v in self.heap.values_mut() {
+            v.reset_marked();
+        }
+    }
 }
 
 pub struct GcObject {
     value: Value,
     marked: bool,
+    children: Vec<GcRef>,
 }
 
-#[derive(Clone, Copy, Debug)]
+impl GcObject {
+    fn mark(&mut self) {
+        self.marked = true;
+    }
+    fn reset_marked(&mut self) {
+        self.marked = false;
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct GcRef(u32);

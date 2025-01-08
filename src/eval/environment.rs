@@ -2,6 +2,8 @@ use std::{ cell::RefCell, collections::HashMap, rc::Rc };
 
 use crate::eval::value::Value;
 
+use super::gc::GcRef;
+
 pub struct Environment {
     variables: HashMap<String, Value>,
     parent: Option<Rc<RefCell<Environment>>>,
@@ -28,6 +30,17 @@ impl Environment {
         }
 
         None
+    }
+    pub fn get_roots(&self) -> Vec<GcRef> {
+        let mut gc_refs = vec![];
+
+        for v in self.variables.values() {
+            if let Value::GcObject(r) = v {
+                gc_refs.push(*r);
+            }
+        }
+
+        gc_refs
     }
 
     pub fn set_variable(&mut self, name: &String, value: Value) {
