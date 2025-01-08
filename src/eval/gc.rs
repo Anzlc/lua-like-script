@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{ collections::HashMap, mem };
 
 use super::value::Value;
 
@@ -34,11 +34,13 @@ impl GarbageCollector {
     fn mark_root(&mut self, root: &GcRef) {
         if let Some(obj) = self.heap.get_mut(root) {
             obj.mark();
-            let children = obj.children.clone();
+            let children = mem::take(&mut obj.children);
 
-            for c in children {
-                self.mark_root(&c);
+            for c in children.iter() {
+                self.mark_root(c);
             }
+            // Needed so we don't have second mut borrow
+            self.heap.get_mut(root).unwrap().children = children;
         }
     }
     pub fn collect_garbage(&mut self, roots: &[GcRef]) {
