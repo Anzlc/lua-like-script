@@ -6,7 +6,7 @@ pub struct ParserError {
 
 impl ParserError {
     pub fn new(message: String, line: u32) -> ParserError {
-        return ParserError { message, line };
+        ParserError { message, line }
     }
 
     pub fn get_message(&self) -> String {

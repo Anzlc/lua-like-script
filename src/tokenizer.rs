@@ -1,4 +1,4 @@
-use std::{ iter, vec };
+use std::{ vec };
 
 pub struct Tokenizer {
     tokens: Vec<Token>,
@@ -89,8 +89,8 @@ pub enum Comparison {
     MoreOrEqual,
 }
 
-const SEPERATORS: &'static [&str] = &[" ", "\n", "\t", "\r"];
-const OPERATORS: &'static [&str] = &[
+const SEPERATORS: &[&str] = &[" ", "\n", "\t", "\r"];
+const OPERATORS: &[&str] = &[
     "&",
     "|",
     "!",
@@ -105,7 +105,7 @@ const OPERATORS: &'static [&str] = &[
     "=",
     "~",
 ];
-const NON_EXTENDABLE: &'static [&str] = &[".", ")", "(", ",", "[", "]", "{", "}"];
+const NON_EXTENDABLE: &[&str] = &[".", ")", "(", ",", "[", "]", "{", "}"];
 impl Tokenizer {
     pub fn new() -> Self {
         Tokenizer { tokens: vec![] }
@@ -146,7 +146,7 @@ impl Tokenizer {
                     buf.clear();
                     continue 'char_iter; // Break should probably do the same
                 } else {
-                    while let Some(c) = iterator.next() {
+                    for c in iterator.by_ref() {
                         if c == '\n' {
                             buf.clear();
                             self.add_token(Some(Token::EndLine));
@@ -202,7 +202,7 @@ impl Tokenizer {
                 self.add_token(Tokenizer::try_match_token(&buf));
                 buf.clear();
                 buf.push(c);
-                while let Some(c) = iterator.next() {
+                for c in iterator.by_ref() {
                     buf.push(c);
                     if c == '\"' {
                         self.add_token(Tokenizer::try_match_token(&buf));
@@ -241,10 +241,10 @@ impl Tokenizer {
             return Some(Token::Value(Value::Float(t)));
         }
 
-        if token.starts_with("\"") && token.ends_with("\"") {
+        if token.starts_with('"') && token.ends_with('"') {
             return Some(Token::Value(Value::String(String::from(token))));
         }
-        if token.len() > 0 {
+        if !token.is_empty() {
             return Some(Token::VariableOrFunction(token.to_string()));
         }
         None
@@ -258,7 +258,7 @@ impl Tokenizer {
 
     fn get_token_from_keyword(buf: &str) -> Option<Token> {
         // TODO: Should probably make a hashmap
-        return match buf {
+        match buf {
             "{" => Some(Token::OpenCurly),
             "}" => Some(Token::CloseCurly),
             "[" => Some(Token::OpenSquare),
@@ -324,6 +324,6 @@ impl Tokenizer {
             "<<" => Some(Token::Operator(Operator::BitwiseLShift)),
             ">>" => Some(Token::Operator(Operator::BitwiseRShift)),
             _ => { None }
-        };
+        }
     }
 }

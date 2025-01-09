@@ -1,7 +1,5 @@
-use std::f64::consts::E;
-use std::{ iter::Map, os::windows::io::BorrowedSocket, thread::Scope };
 use crate::errors::ParserError;
-use crate::tokenizer::{ Operator, Token, Value, MapEntry };
+use crate::tokenizer::{ Operator, Token, Value };
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AstNode {
@@ -143,7 +141,7 @@ impl Parser {
     pub fn parse(&mut self) -> Result<AstNode, ParserError> {
         let mut statements: Vec<AstNode> = vec![];
 
-        while let Some(_) = self.get_current_token() {
+        while self.get_current_token().is_some() {
             match self.parse_statement() {
                 Ok(stmt) => {
                     if let Some(stmt) = stmt {
@@ -162,14 +160,9 @@ impl Parser {
         self.index += 1;
     }
     fn advance_token(&mut self, token: Token) -> Result<(), String> {
-        if let Some(_) = self.get_current_token() {
-            if
-                std::mem::discriminant(self.get_current_token().unwrap()) ==
-                std::mem::discriminant(&token)
-            {
-                self.advance();
-                return Ok(());
-            }
+        if self.get_current_token().is_some() && std::mem::discriminant(self.get_current_token().unwrap()) == std::mem::discriminant(&token) {
+            self.advance();
+            return Ok(());
         }
         Err(format!("Expected {:?}, got {:?}", token, self.get_current_token()))
     }
@@ -220,7 +213,7 @@ impl Parser {
 
             return Ok(AstNode::RepeatUntil {
                 condition: Box::new(expr?),
-                scope: Box::new(AstNode::Scope { stmts: stmts }),
+                scope: Box::new(AstNode::Scope { stmts }),
             });
         }
         Err("Invalid call to parse repeat until".to_string())
@@ -280,7 +273,7 @@ impl Parser {
                 }
             }
         }
-        return Err("Invalid for loop syntax".to_string());
+        Err("Invalid for loop syntax".to_string())
     }
 
     fn parse_if(&mut self) -> Result<AstNode, String> {
@@ -293,7 +286,7 @@ impl Parser {
                 loop {
                     if let Some(Token::End) = self.get_current_token() {
                         self.advance();
-                        let scope = AstNode::Scope { stmts: stmts };
+                        let scope = AstNode::Scope { stmts };
                         return Ok(AstNode::If {
                             condition: Box::new(expr?),
                             scope: Box::new(scope),
@@ -302,7 +295,7 @@ impl Parser {
                         });
                     }
                     if let Some(Token::ElseIf) = self.get_current_token() {
-                        let scope = AstNode::Scope { stmts: stmts };
+                        let scope = AstNode::Scope { stmts };
                         let mut elseifs = vec![];
                         while let Some(elif_node) = self.parse_else_if_branches()? {
                             println!("Elif NOde: {:#?}", elif_node);
@@ -316,7 +309,7 @@ impl Parser {
                         });
                     }
                     if let Some(Token::Else) = self.get_current_token() {
-                        let scope = AstNode::Scope { stmts: stmts };
+                        let scope = AstNode::Scope { stmts };
                         return Ok(AstNode::If {
                             condition: Box::new(expr?),
                             scope: Box::new(scope),
@@ -333,7 +326,7 @@ impl Parser {
                 return Err("Expected token then after expression".to_string());
             }
         }
-        return Err("Invalid call to parse if".to_string());
+        Err("Invalid call to parse if".to_string())
     }
     fn parse_else_if_branches(&mut self) -> Result<Option<AstNode>, String> {
         if let Some(Token::ElseIf) = self.get_current_token() {
@@ -349,7 +342,7 @@ impl Parser {
                     println!("{:?}", self.get_current_token());
                     if let Some(Token::End) = self.get_current_token() {
                         self.advance();
-                        let scope = AstNode::Scope { stmts: stmts };
+                        let scope = AstNode::Scope { stmts };
                         println!("jeele");
                         return Ok(
                             Some(AstNode::If {
@@ -361,7 +354,7 @@ impl Parser {
                         );
                     }
                     if let Some(Token::ElseIf) = self.get_current_token() {
-                        let scope = AstNode::Scope { stmts: stmts };
+                        let scope = AstNode::Scope { stmts };
                         return Ok(
                             Some(AstNode::If {
                                 condition: Box::new(expr?),
@@ -372,7 +365,7 @@ impl Parser {
                         );
                     }
                     if let Some(Token::Else) = self.get_current_token() {
-                        let scope = AstNode::Scope { stmts: stmts };
+                        let scope = AstNode::Scope { stmts };
                         return Ok(
                             Some(AstNode::If {
                                 condition: Box::new(expr?),
@@ -400,7 +393,7 @@ impl Parser {
             loop {
                 if let Some(Token::End) = self.get_current_token() {
                     self.advance();
-                    let scope = AstNode::Scope { stmts: stmts };
+                    let scope = AstNode::Scope { stmts };
                     return Ok(Some(scope));
                 }
                 if let Some(v) = self.parse_statement()? {
@@ -420,7 +413,7 @@ impl Parser {
                 scope: Box::new(self.parse_do_end_scope()?),
             });
         }
-        return Err("Invalid call to parse while".to_string());
+        Err("Invalid call to parse while".to_string())
     }
     fn parse_do_end_scope(&mut self) -> Result<AstNode, String> {
         println!("asdasdasd{:?}", self.get_current_token());
@@ -430,7 +423,7 @@ impl Parser {
             loop {
                 if let Some(Token::End) = self.get_current_token() {
                     self.advance();
-                    return Ok(AstNode::Scope { stmts: stmts });
+                    return Ok(AstNode::Scope { stmts });
                 }
                 if let Some(v) = self.parse_statement()? {
                     stmts.push(v);
@@ -464,7 +457,7 @@ impl Parser {
                 println!("{:?}", self.get_current_token());
                 if let Some(Token::CloseParen) = self.get_current_token() {
                     self.advance_token(Token::CloseParen)?;
-                    return Ok(AstNode::FunctionCall { target: Box::new(target), args: args });
+                    return Ok(AstNode::FunctionCall { target: Box::new(target), args });
                 }
                 args.push(self.parse_expression()?);
 
@@ -474,7 +467,7 @@ impl Parser {
                 }
 
                 self.advance_token(Token::CloseParen)?;
-                return Ok(AstNode::FunctionCall { target: Box::new(target), args: args });
+                return Ok(AstNode::FunctionCall { target: Box::new(target), args });
             }
         }
         if let Some(Token::OperatorAssign(op)) = self.get_current_token() {
@@ -483,7 +476,7 @@ impl Parser {
             self.advance();
             let rhs = self.parse_expression();
             let expr = AstNode::BinaryOp {
-                op: op,
+                op,
                 lhs: Box::new(target.clone()),
                 rhs: Box::new(rhs?),
             };
@@ -498,13 +491,13 @@ impl Parser {
             self.advance();
 
             return Ok(AstNode::Assignment {
-                is_local: is_local,
+                is_local,
                 target: Box::new(target),
                 rhs: Box::new(self.parse_expression()?),
             });
         }
 
-        return Err("Could not parse assignment or function call".to_string());
+        Err("Could not parse assignment or function call".to_string())
 
         //return self.parse_assignment();
     }
@@ -527,7 +520,7 @@ impl Parser {
         // }
 
         // return node;
-        return self.parse_precedence_climbing(0);
+        self.parse_precedence_climbing(0)
     }
     fn parse_precedence_climbing(&mut self, min_prec: u8) -> Result<AstNode, String> {
         let mut res = self.parse_factor()?;
@@ -590,7 +583,7 @@ impl Parser {
                 loop {
                     println!("Self: {:?}", self.get_current_token());
                     if let Some(Token::CloseParen) = self.get_current_token() {
-                        return Ok(AstNode::FunctionCall { target: Box::new(target), args: args });
+                        return Ok(AstNode::FunctionCall { target: Box::new(target), args });
                     }
                     args.push(self.parse_expression()?);
 
@@ -601,7 +594,7 @@ impl Parser {
                     }
                     println!("Selsssf: {:?}", self.get_current_token());
                     self.advance();
-                    return Ok(AstNode::FunctionCall { target: Box::new(target), args: args });
+                    return Ok(AstNode::FunctionCall { target: Box::new(target), args });
                 }
             }
 
@@ -665,7 +658,7 @@ impl Parser {
         //     }
         // }
         if let Some(Token::OpenCurly) = self.get_current_token() {
-            return Ok(self.parse_table()?);
+            return self.parse_table();
         }
 
         Err("Could not parse factor".to_string())
@@ -721,7 +714,7 @@ impl Parser {
                 return Ok(TableEntry::KeyValue(expr?, expr_value?));
             }
         }
-        return Ok(TableEntry::Element(self.parse_expression()?));
+        Ok(TableEntry::Element(self.parse_expression()?))
     }
 
     fn parse_function(&mut self) -> Result<AstNode, String> {
@@ -814,7 +807,7 @@ impl Parser {
             }
             return Ok(Some(base));
         }
-        return Ok(None);
+        Ok(None)
     }
 
     fn parse_return(&mut self) -> Result<AstNode, String> {

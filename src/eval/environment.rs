@@ -11,22 +11,20 @@ pub struct Environment {
 
 impl Environment {
     pub fn new() -> Self {
-        return Environment { variables: HashMap::new(), parent: None };
+        Environment { variables: HashMap::new(), parent: None }
     }
     pub fn with_parent(parent: &Rc<RefCell<Environment>>) -> Self {
-        let parent = Rc::clone(&parent);
-        return Environment { variables: HashMap::new(), parent: Some(parent) };
+        let parent = Rc::clone(parent);
+        Environment { variables: HashMap::new(), parent: Some(parent) }
     }
 
     pub fn get_variable(&self, name: &String) -> Option<Value> {
         if let Some(v) = self.variables.get(name) {
             return Some(v.clone());
-        } else {
-            if let Some(parent) = &self.parent {
-                let borrowed = parent.borrow();
-                let v = borrowed.get_variable(&name);
-                return v;
-            }
+        } else if let Some(parent) = &self.parent {
+            let borrowed = parent.borrow();
+            let v = borrowed.get_variable(name);
+            return v;
         }
 
         None

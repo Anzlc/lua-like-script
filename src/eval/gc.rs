@@ -29,7 +29,7 @@ impl GarbageCollector {
     fn get_id(value: &Value) -> u32 {
         let ptr = value as *const Value;
         let id = ptr as u32;
-        return id >> 1;
+        id >> 1
     }
     fn mark_root(&mut self, root: &GcRef) {
         if let Some(obj) = self.heap.get_mut(root) {
