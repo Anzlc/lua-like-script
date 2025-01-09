@@ -6,7 +6,7 @@ use super::gc::GcRef;
 pub enum Value {
     Nil,
     Number(u64),
-    Floar(f64),
+    Float(f64),
     String(String),
     Bool(bool),
     GcObject(GcRef),
