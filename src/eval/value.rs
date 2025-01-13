@@ -100,4 +100,49 @@ impl Value {
                 ),
         }
     }
+    fn floor_div(&self, other: &Value) -> Value {
+        // Maybe more
+        match (self, other) {
+            (Value::Nil, _) => Value::Nil,
+            (_, Value::Nil) => Value::Nil,
+            (Value::Number(a), Value::Number(b)) => Value::Number(a / b),
+
+            _ =>
+                unimplemented!(
+                    "The div op between {:?} and {:?} is not yet implemented",
+                    self,
+                    other
+                ),
+        }
+    }
+    //     #[derive(Debug, Clone, PartialEq)]
+    // pub enum Operator {
+    //     Add,
+    //     Subtract,
+    //     Multiply,
+    //     Divide,
+    //     FloorDivide,
+    //     Mod,
+    //     Power,
+    //     Concatenation,
+    //     Relational(Comparison),
+    //     Equals,
+    //     NotEquals,
+    //     And,
+    //     Or,
+    //     BitwiseOr,
+    //     BitwiseAnd,
+    //     BitwiseXOR,
+    //     BitwiseNot,
+    //     BitwiseLShift,
+    //     BitwiseRShift,
+    // }
+
+    // #[derive(Debug, Clone, PartialEq)]
+    // pub enum Comparison {
+    //     Less,
+    //     LessOrEqual,
+    //     More,
+    //     MoreOrEqual,
+    // }
 }
