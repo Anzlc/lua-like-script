@@ -115,19 +115,87 @@ impl Value {
                 ),
         }
     }
+
+    fn modulo(&self, other: &Value) -> Value {
+        // Maybe more
+        match (self, other) {
+            (Value::Nil, _) => Value::Nil,
+            (_, Value::Nil) => Value::Nil,
+            (Value::Number(a), Value::Number(b)) => Value::Number(a % b),
+
+            _ =>
+                unimplemented!(
+                    "The div op between {:?} and {:?} is not yet implemented",
+                    self,
+                    other
+                ),
+        }
+    }
+
+    fn power(&self, other: &Value) -> Value {
+        // Maybe more
+        match (self, other) {
+            (Value::Nil, _) => Value::Nil,
+            (_, Value::Nil) => Value::Nil,
+            (Value::Number(a), Value::Number(b)) if *b >= 0 =>
+                Value::Number(i64::pow(*a, *b as u32)),
+            (Value::Number(a), Value::Number(b)) if *b < 0 =>
+                Value::Float(f64::powi(*a as f64, *b as i32)),
+
+            (Value::Number(a), Value::Float(b)) => Value::Float(f64::powf(*a as f64, *b)),
+            (Value::Float(a), Value::Number(b)) => Value::Float(f64::powi(*a as f64, *b as i32)),
+            (Value::Float(a), Value::Float(b)) => Value::Float(f64::powf(*a, *b)),
+
+            _ =>
+                unimplemented!(
+                    "The div op between {:?} and {:?} is not yet implemented",
+                    self,
+                    other
+                ),
+        }
+    }
+    fn concat(&self, other: &Value) -> Value {
+        // Maybe more
+        match (self, other) {
+            (a, b) => Value::String(format!("{}{}", a.to_string(), b.to_string())),
+        }
+    }
+    fn equal(&self, other: &Value) -> Value {
+        // Maybe more
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => Value::Bool(a == b),
+            (Value::Float(a), Value::Float(b)) => Value::Bool(a == b),
+            (Value::Bool(a), Value::Bool(b)) => Value::Bool(a == b),
+            (Value::String(a), Value::String(b)) => Value::Bool(a == b),
+
+            _ =>
+                unimplemented!(
+                    "The div op between {:?} and {:?} is not yet implemented",
+                    self,
+                    other
+                ),
+        }
+    }
+    fn not_equal(&self, other: &Value) -> Value {
+        if let Value::Bool(a) = self.equal(other) {
+            return Value::Bool(!a);
+        }
+        unreachable!("This can't happen")
+    }
+
     //     #[derive(Debug, Clone, PartialEq)]
     // pub enum Operator {
-    //     Add,
-    //     Subtract,
-    //     Multiply,
-    //     Divide,
-    //     FloorDivide,
-    //     Mod,
-    //     Power,
-    //     Concatenation,
+    //     Add,         Done
+    //     Subtract,    Done
+    //     Multiply,    Done
+    //     Divide,      Done
+    //     FloorDivide, Done
+    //     Mod,         Done
+    //     Power,       Done
+    //     Concatenation,Done
     //     Relational(Comparison),
-    //     Equals,
-    //     NotEquals,
+    //     Equals,      Done
+    //     NotEquals,   Done
     //     And,
     //     Or,
     //     BitwiseOr,
@@ -145,4 +213,17 @@ impl Value {
     //     More,
     //     MoreOrEqual,
     // }
+}
+
+impl ToString for Value {
+    fn to_string(&self) -> String {
+        match self {
+            Value::Nil => String::from("Nil"),
+            Value::Number(a) => a.to_string(),
+            Value::Float(a) => a.to_string(),
+            Value::String(a) => a.clone(),
+            Value::Bool(a) => a.to_string(),
+            _ => unimplemented!("Not implemented to string"),
+        }
+    }
 }
