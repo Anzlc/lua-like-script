@@ -183,6 +183,104 @@ impl Value {
         unreachable!("This can't happen")
     }
 
+    fn and(&self, other: &Value) -> Value {
+        // Maybe more
+        if self.is_truthy() {
+            return other.clone();
+        } else {
+            return self.clone();
+        }
+    }
+    fn or(&self, other: &Value) -> Value {
+        // Maybe more
+        if self.is_truthy() {
+            return self.clone();
+        } else {
+            return other.clone();
+        }
+    }
+
+    fn bitwise_and(&self, other: &Value) -> Value {
+        // Maybe more
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => Value::Number(a & b),
+
+            _ =>
+                unimplemented!(
+                    "The div op between {:?} and {:?} is not yet implemented",
+                    self,
+                    other
+                ),
+        }
+    }
+    fn bitwise_or(&self, other: &Value) -> Value {
+        // Maybe more
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => Value::Number(a | b),
+
+            _ =>
+                unimplemented!(
+                    "The div op between {:?} and {:?} is not yet implemented",
+                    self,
+                    other
+                ),
+        }
+    }
+    fn bitwise_left_shift(&self, other: &Value) -> Value {
+        // Maybe more
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => Value::Number(a << b),
+
+            _ =>
+                unimplemented!(
+                    "The div op between {:?} and {:?} is not yet implemented",
+                    self,
+                    other
+                ),
+        }
+    }
+    fn bitwise_right_shift(&self, other: &Value) -> Value {
+        // Maybe more
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => Value::Number(a >> b),
+
+            _ =>
+                unimplemented!(
+                    "The div op between {:?} and {:?} is not yet implemented",
+                    self,
+                    other
+                ),
+        }
+    }
+    fn bitwise_xor(&self, other: &Value) -> Value {
+        // Maybe more
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => Value::Number(a ^ b),
+
+            _ =>
+                unimplemented!(
+                    "The div op between {:?} and {:?} is not yet implemented",
+                    self,
+                    other
+                ),
+        }
+    }
+    fn bitwise_not(&self) -> Value {
+        // Maybe more
+        match self {
+            Value::Number(a) => Value::Number(!a),
+
+            _ => unimplemented!("The unary not op for {:?} is not yet implemented", self),
+        }
+    }
+
+    pub fn is_truthy(&self) -> bool {
+        match self {
+            Value::Nil | Value::Bool(false) => false,
+            _ => true,
+        }
+    }
+
     //     #[derive(Debug, Clone, PartialEq)]
     // pub enum Operator {
     //     Add,         Done
@@ -196,14 +294,14 @@ impl Value {
     //     Relational(Comparison),
     //     Equals,      Done
     //     NotEquals,   Done
-    //     And,
-    //     Or,
-    //     BitwiseOr,
-    //     BitwiseAnd,
-    //     BitwiseXOR,
-    //     BitwiseNot,
-    //     BitwiseLShift,
-    //     BitwiseRShift,
+    //     And,         Done
+    //     Or,          Done
+    //     BitwiseOr,   Done
+    //     BitwiseAnd,  Done
+    //     BitwiseXOR,  Done
+    //     BitwiseNot,  Done
+    //     BitwiseLShift,Done
+    //     BitwiseRShift,Done
     // }
 
     // #[derive(Debug, Clone, PartialEq)]
@@ -212,6 +310,13 @@ impl Value {
     //     LessOrEqual,
     //     More,
     //     MoreOrEqual,
+    // }
+    //     #[derive(Debug, Clone, PartialEq)]
+    // pub enum UnaryOp {
+    //     Negative,
+    //     Length,
+    //     Not,
+    //     BitwiseNot,
     // }
 }
 
