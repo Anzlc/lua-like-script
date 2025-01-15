@@ -274,6 +274,26 @@ impl Value {
         }
     }
 
+    fn unary_negative(&self) -> Value {
+        match self {
+            Value::Number(a) => Value::Number(-a),
+            Value::Float(a) => Value::Float(-a),
+
+            _ => unimplemented!("The unary not op for {:?} is not yet implemented", self),
+        }
+    }
+    fn unary_length(&self) -> Value {
+        match self {
+            Value::String(a) => Value::Number(a.len() as i64),
+
+            _ => unimplemented!("The unary not op for {:?} is not yet implemented", self),
+        }
+    }
+
+    fn unary_not(&self) -> Value {
+        return Value::Bool(!self.is_truthy());
+    }
+
     pub fn is_truthy(&self) -> bool {
         match self {
             Value::Nil | Value::Bool(false) => false,
@@ -313,10 +333,10 @@ impl Value {
     // }
     //     #[derive(Debug, Clone, PartialEq)]
     // pub enum UnaryOp {
-    //     Negative,
-    //     Length,
-    //     Not,
-    //     BitwiseNot,
+    //     Negative,Done
+    //     Length,  Done
+    //     Not,     Done
+    //     BitwiseNot,Done
     // }
 }
 
