@@ -301,6 +301,67 @@ impl Value {
         }
     }
 
+    fn less(&self, other: &Value) -> Value {
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => Value::Bool(a < b),
+            (Value::Number(a), Value::Float(b)) => Value::Bool((*a as f64) < *b),
+            (Value::Float(a), Value::Float(b)) => Value::Bool(a < b),
+            (Value::Float(a), Value::Number(b)) => Value::Bool(*a < (*b as f64)),
+
+            _ =>
+                unimplemented!(
+                    "The div op between {:?} and {:?} is not yet implemented",
+                    self,
+                    other
+                ),
+        }
+    }
+    fn less_or_equal(&self, other: &Value) -> Value {
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => Value::Bool(a <= b),
+            (Value::Number(a), Value::Float(b)) => Value::Bool((*a as f64) <= *b),
+            (Value::Float(a), Value::Float(b)) => Value::Bool(a <= b),
+            (Value::Float(a), Value::Number(b)) => Value::Bool(*a <= (*b as f64)),
+
+            _ =>
+                unimplemented!(
+                    "The div op between {:?} and {:?} is not yet implemented",
+                    self,
+                    other
+                ),
+        }
+    }
+    fn greater(&self, other: &Value) -> Value {
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => Value::Bool(a > b),
+            (Value::Number(a), Value::Float(b)) => Value::Bool((*a as f64) > *b),
+            (Value::Float(a), Value::Float(b)) => Value::Bool(a > b),
+            (Value::Float(a), Value::Number(b)) => Value::Bool(*a > (*b as f64)),
+
+            _ =>
+                unimplemented!(
+                    "The div op between {:?} and {:?} is not yet implemented",
+                    self,
+                    other
+                ),
+        }
+    }
+    fn greater_or_equal(&self, other: &Value) -> Value {
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => Value::Bool(a >= b),
+            (Value::Number(a), Value::Float(b)) => Value::Bool((*a as f64) >= *b),
+            (Value::Float(a), Value::Float(b)) => Value::Bool(a >= b),
+            (Value::Float(a), Value::Number(b)) => Value::Bool(*a >= (*b as f64)),
+
+            _ =>
+                unimplemented!(
+                    "The div op between {:?} and {:?} is not yet implemented",
+                    self,
+                    other
+                ),
+        }
+    }
+
     //     #[derive(Debug, Clone, PartialEq)]
     // pub enum Operator {
     //     Add,         Done
@@ -311,7 +372,7 @@ impl Value {
     //     Mod,         Done
     //     Power,       Done
     //     Concatenation,Done
-    //     Relational(Comparison),
+    //     Relational(Comparison), Done
     //     Equals,      Done
     //     NotEquals,   Done
     //     And,         Done
@@ -326,10 +387,10 @@ impl Value {
 
     // #[derive(Debug, Clone, PartialEq)]
     // pub enum Comparison {
-    //     Less,
-    //     LessOrEqual,
-    //     More,
-    //     MoreOrEqual,
+    //     Less,        Done
+    //     LessOrEqual, Done
+    //     More,        Done
+    //     MoreOrEqual, Done
     // }
     //     #[derive(Debug, Clone, PartialEq)]
     // pub enum UnaryOp {
