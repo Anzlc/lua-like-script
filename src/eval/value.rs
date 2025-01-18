@@ -1,4 +1,6 @@
-use std::{ collections::HashMap, fmt::format };
+use std::{ collections::HashMap, fmt::format, hash::Hash };
+
+use crate::parser::ParsedValue;
 
 use super::gc::GcRef;
 
@@ -15,6 +17,58 @@ pub enum Value {
         map: HashMap<Value, Value>,
     },
     // Not yet implemented
+}
+impl Hash for Value {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Value::Number(n) => {
+                state.write_u8(0);
+                n.hash(state);
+            }
+            Value::Float(f) => {
+                state.write_u8(1);
+                f.to_bits().hash(state);
+            }
+            Value::String(s) => {
+                state.write_u8(2);
+                s.hash(state);
+            }
+            Value::Bool(b) => {
+                state.write_u8(3);
+                b.hash(state);
+            }
+            _ => {
+                state.write_u8(0);
+                (0).hash(state);
+            }
+        }
+    }
+}
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Nil, Value::Nil) => true,
+            (Value::Number(a), Value::Number(b)) => a == b,
+            (Value::Float(a), Value::Float(b)) => a == b,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            // TODO: Add eq for table
+            _ => false,
+        }
+    }
+}
+impl Eq for Value {}
+impl From<ParsedValue> for Value {
+    fn from(value: ParsedValue) -> Self {
+        match value {
+            ParsedValue::Nil => Value::Nil,
+            ParsedValue::Bool(b) => Value::Bool(b),
+            ParsedValue::Float(f) => Value::Float(f),
+            ParsedValue::Int(i) => Value::Number(i),
+            ParsedValue::String(s) => Value::String(s),
+            ParsedValue::Table { array, map } =>
+                panic!("Cant just convert Parsed Value to Value for Table"),
+        }
+    }
 }
 
 impl Value {
