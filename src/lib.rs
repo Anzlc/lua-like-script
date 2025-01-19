@@ -5,7 +5,9 @@ mod eval;
 
 #[cfg(test)]
 mod tests {
-    use tokenizer::{ Tokenizer, Value };
+    use parser::{ AstNode, ParsedValue, Parser };
+    use tokenizer::{ Token, Tokenizer, Value };
+    use crate::parser::ForType;
 
     use super::*;
 

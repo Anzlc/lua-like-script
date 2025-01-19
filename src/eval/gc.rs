@@ -43,6 +43,11 @@ impl GarbageCollector {
             self.heap.get_mut(root).unwrap().children = children;
         }
     }
+    pub fn add_children_ref(&mut self, child: GcRef) {
+        if let Some(obj) = self.heap.get_mut(&child) {
+            obj.children.push(child);
+        }
+    }
     pub fn collect_garbage(&mut self, roots: &[GcRef]) {
         // Mark phase
         for root in roots {

@@ -44,4 +44,10 @@ impl Environment {
     pub fn set_variable(&mut self, name: &String, value: Value) {
         self.variables.insert(name.to_owned(), value);
     }
+
+    pub fn print_vars(&self) {
+        for entry in self.variables.iter() {
+            println!("Variable {} with {:?}", entry.0, entry.1);
+        }
+    }
 }
