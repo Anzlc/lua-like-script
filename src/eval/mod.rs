@@ -33,6 +33,7 @@ mod tests {
         f = -1.25
         a = "Hello"
         z = "Len of a is " .. #a
+        
         "#;
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());

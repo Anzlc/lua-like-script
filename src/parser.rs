@@ -160,7 +160,11 @@ impl Parser {
         self.index += 1;
     }
     fn advance_token(&mut self, token: Token) -> Result<(), String> {
-        if self.get_current_token().is_some() && std::mem::discriminant(self.get_current_token().unwrap()) == std::mem::discriminant(&token) {
+        if
+            self.get_current_token().is_some() &&
+            std::mem::discriminant(self.get_current_token().unwrap()) ==
+                std::mem::discriminant(&token)
+        {
             self.advance();
             return Ok(());
         }
@@ -786,6 +790,10 @@ impl Parser {
                             };
                             base = indexed;
                             self.advance();
+                        } else {
+                            return Err(
+                                "Cannot index with a number value with . syntax. Try [] instead".to_string()
+                            );
                         }
                     }
                     Some(Token::OpenSquare) => {

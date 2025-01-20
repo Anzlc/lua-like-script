@@ -16,6 +16,7 @@ mod tests {
         let code = "x = 10";
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());
+        println!("{:?}", tokenizer.get_tokens());
         assert_eq!(tokenizer.get_tokens(), [
             Token::VariableOrFunction("x".to_string()),
             Token::Set,

@@ -161,6 +161,54 @@ impl Tokenizer {
                 self.add_token(Some(Token::EndLine));
                 continue 'char_iter;
             }
+
+            if "0123456789".contains(c) {
+                self.add_token(Tokenizer::try_match_token(&buf));
+                buf.clear();
+                let mut c = c;
+                buf.push(c);
+                let mut dot_counter = 0;
+                loop {
+                    let c = iterator.peek();
+                    let mut new_buf = buf.clone();
+                    if let Some(c) = c {
+                        new_buf.push(*c);
+                        if *c == '.' {
+                            dot_counter += 1;
+                        }
+                    } else {
+                        self.add_token(Tokenizer::try_match_token(&buf));
+                        break;
+                    }
+                    if dot_counter <= 1 {
+                        if
+                            let Some(Token::Value(Value::Float(_))) = Tokenizer::try_match_token(
+                                &new_buf
+                            )
+                        {
+                            // Ok
+                            buf = new_buf;
+                            iterator.next();
+                            continue;
+                        }
+                        if
+                            let Some(Token::Value(Value::Int(_))) = Tokenizer::try_match_token(
+                                &new_buf
+                            )
+                        {
+                            // Ok
+                            buf = new_buf;
+                            iterator.next();
+                            continue;
+                        }
+                    }
+
+                    self.add_token(Tokenizer::try_match_token(&buf));
+                    break;
+                }
+                buf.clear();
+                continue;
+            }
             if SEPERATORS.contains(&c.to_string().as_str()) {
                 self.add_token(Tokenizer::try_match_token(&buf));
                 buf.clear();
