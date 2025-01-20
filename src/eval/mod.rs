@@ -25,16 +25,20 @@ mod tests {
     #[test]
     fn test_eval() {
         let code =
-            r#"
-        x = {}
+            r#"x = {1, 2, 3, hello={1,2,3}}
         x[1] = "Hello"
-        y = 1
-        a = "Hefllo"
-        z = #a
+        --ptr = x[2]
+        ptr["Test"] = 2
+        y = 1 | 2
+        f = -1.25
+        a = "Hello"
+        z = "Len of a is " .. #a
         "#;
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());
-
+        for t in tokenizer.get_tokens() {
+            println!("{:?}", t);
+        }
         let mut parser = Parser::new(tokenizer.get_tokens().to_vec());
         let parsed = parser.parse();
         println!("{:#?}", parsed);

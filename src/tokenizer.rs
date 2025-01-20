@@ -117,6 +117,8 @@ impl Tokenizer {
 
         let mut iterator = input.chars().peekable();
         'char_iter: while let Some(c) = iterator.next() {
+            // TODO: Add seperate parsing for numbers
+            //          Because float's get parsed wrong
             if c == '-' && *iterator.peek().unwrap_or(&'x') == '-' {
                 iterator.next();
                 self.add_token(Tokenizer::try_match_token(&buf));
