@@ -24,10 +24,13 @@ mod tests {
     }
     #[test]
     fn test_eval() {
-        let code = "
+        let code =
+            "
         x = {}
         x[1] = \"Hello\"
         y = 1
+        a = \"Hefllo\"
+        z = #a
         ";
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());

@@ -104,8 +104,10 @@ const OPERATORS: &[&str] = &[
     ">",
     "=",
     "~",
+    ".",
+    "#",
 ];
-const NON_EXTENDABLE: &[&str] = &[".", ")", "(", ",", "[", "]", "{", "}"];
+const NON_EXTENDABLE: &[&str] = &[")", "(", ",", "[", "]", "{", "}"];
 impl Tokenizer {
     pub fn new() -> Self {
         Tokenizer { tokens: vec![] }

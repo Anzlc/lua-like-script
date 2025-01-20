@@ -1,8 +1,10 @@
 use std::{ cell::RefCell, collections::HashMap, rc::Rc };
 
+use crate::eval::value;
+
 use super::value::Value;
 
-use super::gc::GcRef;
+use super::gc::{ GarbageCollector, GcRef };
 
 pub struct Environment {
     variables: HashMap<String, Value>,
@@ -45,9 +47,12 @@ impl Environment {
         self.variables.insert(name.to_owned(), value);
     }
 
-    pub fn print_vars(&self) {
+    pub fn print_vars(&self, gc: &mut GarbageCollector) {
         for entry in self.variables.iter() {
             println!("Variable {} with {:?}", entry.0, entry.1);
+            if let Value::GcObject(r) = entry.1 {
+                println!("          GcObject value: {:?}", gc.get(*r));
+            }
         }
     }
 }

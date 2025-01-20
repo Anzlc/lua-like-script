@@ -1,6 +1,6 @@
 use std::{ cell::RefCell, collections::HashMap, rc::Rc };
 
-use crate::parser::{ AstNode, ParsedValue };
+use crate::{ parser::{ AstNode, ParsedValue, UnaryOp }, tokenizer::Operator };
 
 use super::{ environment::Environment, gc::{ GarbageCollector, GcRef }, value::Value };
 
@@ -21,8 +21,8 @@ impl Interpreter {
             gc,
         };
     }
-    pub fn print_vars(&self) {
-        self.env_stack.last().unwrap().borrow().print_vars();
+    pub fn print_vars(&mut self) {
+        self.env_stack.last().unwrap().borrow().print_vars(&mut self.gc);
     }
     pub fn eval(&mut self, node: &AstNode) -> Value {
         match node {
@@ -35,9 +35,57 @@ impl Interpreter {
                 self.eval_assignment(*is_local, target, rhs);
                 Value::Nil
             }
+            AstNode::BinaryOp { op, lhs, rhs } => self.eval_bin_op(op, lhs, rhs),
+            AstNode::UnaryOp { op, value } => self.eval_unary_op(op, &value),
             _ => unimplemented!("Fucking wait a bit I am implementing this shit now"),
         }
     }
+    fn eval_unary_op(&mut self, op: &UnaryOp, value: &AstNode) -> Value {
+        let value = self.eval(value);
+
+        match op {
+            UnaryOp::Negative => value.unary_negative(),
+            UnaryOp::Length => value.unary_length(),
+            UnaryOp::Not => value.unary_not(),
+            UnaryOp::BitwiseNot => value.bitwise_not(),
+        }
+    }
+
+    fn eval_bin_op(&mut self, op: &Operator, lhs: &AstNode, rhs: &AstNode) -> Value {
+        let lhs = self.eval(lhs);
+        let rhs = self.eval(rhs);
+
+        match op {
+            Operator::Add => lhs.add(&rhs),
+            Operator::Subtract => lhs.sub(&rhs),
+            Operator::Multiply => lhs.mul(&rhs),
+            Operator::Divide => lhs.div(&rhs),
+            Operator::FloorDivide => lhs.floor_div(&rhs),
+            Operator::Mod => lhs.modulo(&rhs),
+            Operator::Power => lhs.power(&rhs),
+            Operator::Concatenation => lhs.concat(&rhs),
+            Operator::Equals => lhs.equal(&rhs),
+            Operator::NotEquals => lhs.not_equal(&rhs),
+            Operator::And => lhs.add(&rhs),
+            Operator::Or => lhs.or(&rhs),
+            Operator::BitwiseOr => lhs.bitwise_or(&rhs),
+            Operator::BitwiseAnd => lhs.bitwise_and(&rhs),
+            Operator::BitwiseXOR => lhs.bitwise_xor(&rhs),
+
+            Operator::BitwiseLShift => lhs.bitwise_left_shift(&rhs),
+            Operator::BitwiseRShift => lhs.bitwise_right_shift(&rhs),
+            Operator::Relational(comparison) => {
+                match comparison {
+                    crate::tokenizer::Comparison::Less => lhs.less(&rhs),
+                    crate::tokenizer::Comparison::LessOrEqual => lhs.less_or_equal(&rhs),
+                    crate::tokenizer::Comparison::More => lhs.greater(&rhs),
+                    crate::tokenizer::Comparison::MoreOrEqual => lhs.greater_or_equal(&rhs),
+                }
+            }
+            _ => panic!("Not a binary op"),
+        }
+    }
+
     fn get_variable(&self, name: &String) -> Value {
         println!(
             "Got var ({name}): {:?}",

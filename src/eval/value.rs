@@ -74,7 +74,7 @@ impl From<ParsedValue> for Value {
 impl Value {
     //Returns owned Value because it works like that
     //TODO: Think about Tables
-    fn add(&self, other: &Value) -> Value {
+    pub fn add(&self, other: &Value) -> Value {
         match (self, other) {
             (Value::Nil, _) => Value::Nil,
             (_, Value::Nil) => Value::Nil,
@@ -95,7 +95,7 @@ impl Value {
                 ),
         }
     }
-    fn sub(&self, other: &Value) -> Value {
+    pub fn sub(&self, other: &Value) -> Value {
         match (self, other) {
             (Value::Nil, _) => Value::Nil,
             (_, Value::Nil) => Value::Nil,
@@ -115,7 +115,7 @@ impl Value {
                 ),
         }
     }
-    fn mul(&self, other: &Value) -> Value {
+    pub fn mul(&self, other: &Value) -> Value {
         match (self, other) {
             (Value::Nil, _) => Value::Nil,
             (_, Value::Nil) => Value::Nil,
@@ -137,7 +137,7 @@ impl Value {
                 ),
         }
     }
-    fn div(&self, other: &Value) -> Value {
+    pub fn div(&self, other: &Value) -> Value {
         match (self, other) {
             (Value::Nil, _) => Value::Nil,
             (_, Value::Nil) => Value::Nil,
@@ -154,7 +154,7 @@ impl Value {
                 ),
         }
     }
-    fn floor_div(&self, other: &Value) -> Value {
+    pub fn floor_div(&self, other: &Value) -> Value {
         // Maybe more
         match (self, other) {
             (Value::Nil, _) => Value::Nil,
@@ -170,7 +170,7 @@ impl Value {
         }
     }
 
-    fn modulo(&self, other: &Value) -> Value {
+    pub fn modulo(&self, other: &Value) -> Value {
         // Maybe more
         match (self, other) {
             (Value::Nil, _) => Value::Nil,
@@ -186,7 +186,7 @@ impl Value {
         }
     }
 
-    fn power(&self, other: &Value) -> Value {
+    pub fn power(&self, other: &Value) -> Value {
         // Maybe more
         match (self, other) {
             (Value::Nil, _) => Value::Nil,
@@ -208,13 +208,13 @@ impl Value {
                 ),
         }
     }
-    fn concat(&self, other: &Value) -> Value {
+    pub fn concat(&self, other: &Value) -> Value {
         // Maybe more
         match (self, other) {
             (a, b) => Value::String(format!("{}{}", a.to_string(), b.to_string())),
         }
     }
-    fn equal(&self, other: &Value) -> Value {
+    pub fn equal(&self, other: &Value) -> Value {
         // Maybe more
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => Value::Bool(a == b),
@@ -230,14 +230,14 @@ impl Value {
                 ),
         }
     }
-    fn not_equal(&self, other: &Value) -> Value {
+    pub fn not_equal(&self, other: &Value) -> Value {
         if let Value::Bool(a) = self.equal(other) {
             return Value::Bool(!a);
         }
         unreachable!("This can't happen")
     }
 
-    fn and(&self, other: &Value) -> Value {
+    pub fn and(&self, other: &Value) -> Value {
         // Maybe more
         if self.is_truthy() {
             return other.clone();
@@ -245,7 +245,7 @@ impl Value {
             return self.clone();
         }
     }
-    fn or(&self, other: &Value) -> Value {
+    pub fn or(&self, other: &Value) -> Value {
         // Maybe more
         if self.is_truthy() {
             return self.clone();
@@ -254,7 +254,7 @@ impl Value {
         }
     }
 
-    fn bitwise_and(&self, other: &Value) -> Value {
+    pub fn bitwise_and(&self, other: &Value) -> Value {
         // Maybe more
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => Value::Number(a & b),
@@ -267,7 +267,7 @@ impl Value {
                 ),
         }
     }
-    fn bitwise_or(&self, other: &Value) -> Value {
+    pub fn bitwise_or(&self, other: &Value) -> Value {
         // Maybe more
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => Value::Number(a | b),
@@ -280,7 +280,7 @@ impl Value {
                 ),
         }
     }
-    fn bitwise_left_shift(&self, other: &Value) -> Value {
+    pub fn bitwise_left_shift(&self, other: &Value) -> Value {
         // Maybe more
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => Value::Number(a << b),
@@ -293,7 +293,7 @@ impl Value {
                 ),
         }
     }
-    fn bitwise_right_shift(&self, other: &Value) -> Value {
+    pub fn bitwise_right_shift(&self, other: &Value) -> Value {
         // Maybe more
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => Value::Number(a >> b),
@@ -306,7 +306,7 @@ impl Value {
                 ),
         }
     }
-    fn bitwise_xor(&self, other: &Value) -> Value {
+    pub fn bitwise_xor(&self, other: &Value) -> Value {
         // Maybe more
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => Value::Number(a ^ b),
@@ -319,7 +319,7 @@ impl Value {
                 ),
         }
     }
-    fn bitwise_not(&self) -> Value {
+    pub fn bitwise_not(&self) -> Value {
         // Maybe more
         match self {
             Value::Number(a) => Value::Number(!a),
@@ -328,7 +328,7 @@ impl Value {
         }
     }
 
-    fn unary_negative(&self) -> Value {
+    pub fn unary_negative(&self) -> Value {
         match self {
             Value::Number(a) => Value::Number(-a),
             Value::Float(a) => Value::Float(-a),
@@ -336,15 +336,19 @@ impl Value {
             _ => unimplemented!("The unary not op for {:?} is not yet implemented", self),
         }
     }
-    fn unary_length(&self) -> Value {
+    pub fn unary_length(&self) -> Value {
+        println!("Operating len");
         match self {
-            Value::String(a) => Value::Number(a.len() as i64),
+            Value::String(a) => {
+                println!("Hello a is {a} and len is {}", a.len());
+                Value::Number(a.len() as i64)
+            }
 
             _ => unimplemented!("The unary not op for {:?} is not yet implemented", self),
         }
     }
 
-    fn unary_not(&self) -> Value {
+    pub fn unary_not(&self) -> Value {
         return Value::Bool(!self.is_truthy());
     }
 
@@ -355,7 +359,7 @@ impl Value {
         }
     }
 
-    fn less(&self, other: &Value) -> Value {
+    pub fn less(&self, other: &Value) -> Value {
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => Value::Bool(a < b),
             (Value::Number(a), Value::Float(b)) => Value::Bool((*a as f64) < *b),
@@ -370,7 +374,7 @@ impl Value {
                 ),
         }
     }
-    fn less_or_equal(&self, other: &Value) -> Value {
+    pub fn less_or_equal(&self, other: &Value) -> Value {
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => Value::Bool(a <= b),
             (Value::Number(a), Value::Float(b)) => Value::Bool((*a as f64) <= *b),
@@ -385,7 +389,7 @@ impl Value {
                 ),
         }
     }
-    fn greater(&self, other: &Value) -> Value {
+    pub fn greater(&self, other: &Value) -> Value {
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => Value::Bool(a > b),
             (Value::Number(a), Value::Float(b)) => Value::Bool((*a as f64) > *b),
@@ -400,7 +404,7 @@ impl Value {
                 ),
         }
     }
-    fn greater_or_equal(&self, other: &Value) -> Value {
+    pub fn greater_or_equal(&self, other: &Value) -> Value {
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => Value::Bool(a >= b),
             (Value::Number(a), Value::Float(b)) => Value::Bool((*a as f64) >= *b),
