@@ -87,7 +87,7 @@ mod tests {
                                 AstNode::Literal(ParsedValue::Int(1)),
                                 AstNode::Literal(ParsedValue::Int(10)),
                                 AstNode::Literal(
-                                    ParsedValue::String("\"Is this real chat\"".to_string())
+                                    ParsedValue::String("Is this real chat".to_string())
                                 )
                             ],
                         }),

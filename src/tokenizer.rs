@@ -203,14 +203,14 @@ impl Tokenizer {
             if c == '\"' {
                 self.add_token(Tokenizer::try_match_token(&buf));
                 buf.clear();
-                buf.push(c);
+
                 for c in iterator.by_ref() {
-                    buf.push(c);
                     if c == '\"' {
-                        self.add_token(Tokenizer::try_match_token(&buf));
+                        self.add_token(Some(Token::Value(Value::String(buf.to_string()))));
                         buf.clear();
                         break;
                     }
+                    buf.push(c);
                 }
                 continue;
             }

@@ -25,13 +25,13 @@ mod tests {
     #[test]
     fn test_eval() {
         let code =
-            "
+            r#"
         x = {}
-        x[1] = \"Hello\"
+        x[1] = "Hello"
         y = 1
-        a = \"Hefllo\"
+        a = "Hefllo"
         z = #a
-        ";
+        "#;
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());
 
