@@ -571,7 +571,22 @@ impl Parser {
         }
     }
     fn parse_factor(&mut self) -> Result<AstNode, String> {
+        println!("current looking at: {:?}", self.get_current_token());
         if let Some(Token::Value(v)) = self.get_current_token() {
+            if let Value::Int(a) = v {
+                if let Some(Token::Dot) = self.peek() {
+                    if let Some(Token::Value(Value::Int(b))) = self.peek_at(2) {
+                        // Oh it's a float
+                        let f =
+                            (*a as f64) +
+                            (*b as f64) / (10.0f64).powi((*b as f64).log10().ceil() as i32);
+                        self.advance(); // Dot
+                        self.advance(); //Number
+                        self.advance(); // Other
+                        return Ok(AstNode::Literal(ParsedValue::Float(f)));
+                    }
+                }
+            }
             let v = v.clone();
             self.advance();
             return Ok(AstNode::Literal(v.into()));
@@ -618,8 +633,9 @@ impl Parser {
         if let Some(Token::Operator(Operator::Subtract)) = self.get_current_token() {
             self.advance();
             println!("crr tokn: {:?}", self.get_current_token());
-
+            println!("Okk");
             let value = self.parse_factor();
+            println!("Okk 2 {:?}", value);
             return Ok(AstNode::UnaryOp { op: UnaryOp::Negative, value: Box::new(value?) });
         }
         if let Some(Token::Operator(Operator::BitwiseNot)) = self.get_current_token() {
@@ -773,6 +789,7 @@ impl Parser {
     }
 
     fn parse_target(&mut self) -> Result<Option<AstNode>, String> {
+        // FIXME: Fix this shit
         if let Some(Token::VariableOrFunction(name)) = self.get_current_token() {
             let name = name.clone();
             let mut base = AstNode::Variable(name);

@@ -28,12 +28,13 @@ mod tests {
             r#"x = {1, 2, 3, hello={1,2,3}}
         x[1] = "Hello"
         --ptr = x[2]
-        ptr["Test"] = 2
+        x["Test"] = 2
         y = 1 | 2
         f = -1.25
         a = "Hello"
         z = "Len of a is " .. #a
-        
+        --x = 10.2
+        hmm = 10[1]
         "#;
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());
