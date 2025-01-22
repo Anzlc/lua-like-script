@@ -576,13 +576,21 @@ impl Parser {
             if let Value::Int(a) = v {
                 if let Some(Token::Dot) = self.peek() {
                     if let Some(Token::Value(Value::Int(b))) = self.peek_at(2) {
-                        // Oh it's a float
-                        let f =
-                            (*a as f64) +
-                            (*b as f64) / (10.0f64).powi((*b as f64).log10().ceil() as i32);
+                        let a = *a;
+                        let b = *b;
+
                         self.advance(); // Dot
                         self.advance(); //Number
                         self.advance(); // Other
+
+                        if b == 0i64 {
+                            return Ok(AstNode::Literal(ParsedValue::Float(a as f64)));
+                        }
+                        // Oh it's a float
+                        let f =
+                            (a as f64) +
+                            (b as f64) /
+                                (10.0f64).powi((b as f64).log10().ceil() as i32).max(10.0f64);
                         return Ok(AstNode::Literal(ParsedValue::Float(f)));
                     }
                 }

@@ -1,0 +1,14 @@
+"filename", "language", "TOML", "Rust", "comment", "blank", "total"
+"c:\Users\azefr\Documents\Projects\lua-rs\Cargo.lock", "TOML", 4, 0, 2, 2, 8
+"c:\Users\azefr\Documents\Projects\lua-rs\Cargo.toml", "TOML", 5, 0, 0, 2, 7
+"c:\Users\azefr\Documents\Projects\lua-rs\src\errors.rs", "Rust", 0, 14, 0, 3, 17
+"c:\Users\azefr\Documents\Projects\lua-rs\src\eval\environment.rs", "Rust", 0, 47, 0, 12, 59
+"c:\Users\azefr\Documents\Projects\lua-rs\src\eval\gc.rs", "Rust", 0, 87, 5, 17, 109
+"c:\Users\azefr\Documents\Projects\lua-rs\src\eval\interpreter.rs", "Rust", 0, 176, 1, 22, 199
+"c:\Users\azefr\Documents\Projects\lua-rs\src\eval\mod.rs", "Rust", 0, 48, 0, 7, 55
+"c:\Users\azefr\Documents\Projects\lua-rs\src\eval\types.rs", "Rust", 0, 72, 0, 13, 85
+"c:\Users\azefr\Documents\Projects\lua-rs\src\eval\value.rs", "Rust", 0, 386, 53, 41, 480
+"c:\Users\azefr\Documents\Projects\lua-rs\src\lib.rs", "Rust", 0, 290, 0, 19, 309
+"c:\Users\azefr\Documents\Projects\lua-rs\src\parser.rs", "Rust", 0, 747, 50, 57, 854
+"c:\Users\azefr\Documents\Projects\lua-rs\src\tokenizer.rs", "Rust", 0, 305, 7, 23, 335
+"Total", "-", 9, 2172, 118, 218, 2517
