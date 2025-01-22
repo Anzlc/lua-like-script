@@ -2,7 +2,7 @@ use std::{ collections::HashMap, fmt::format, hash::Hash };
 
 use crate::parser::ParsedValue;
 
-use super::gc::GcRef;
+use super::gc::{ GarbageCollector, GcObject, GcRef };
 
 #[derive(Clone, Debug)]
 pub enum Value {
@@ -12,10 +12,7 @@ pub enum Value {
     String(String),
     Bool(bool),
     GcObject(GcRef),
-    Table { // Under GcObject
-        array: Vec<Value>,
-        map: HashMap<Value, Value>,
-    },
+
     // Not yet implemented
 }
 impl Hash for Value {
@@ -38,7 +35,7 @@ impl Hash for Value {
                 b.hash(state);
             }
             _ => {
-                state.write_u8(0);
+                state.write_u8(4);
                 (0).hash(state);
             }
         }
@@ -51,6 +48,7 @@ impl PartialEq for Value {
             (Value::Number(a), Value::Number(b)) => a == b,
             (Value::Float(a), Value::Float(b)) => a == b,
             (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::String(a), Value::String(b)) => a == b,
             // TODO: Add eq for table
             _ => false,
         }
@@ -208,10 +206,10 @@ impl Value {
                 ),
         }
     }
-    pub fn concat(&self, other: &Value) -> Value {
+    pub fn concat(&self, other: &Value, gc: &GarbageCollector) -> Value {
         // Maybe more
         match (self, other) {
-            (a, b) => Value::String(format!("{}{}", a.to_string(), b.to_string())),
+            (a, b) => Value::String(format!("{}{}", a.to_string(gc), b.to_string(gc))),
         }
     }
     pub fn equal(&self, other: &Value) -> Value {
@@ -420,6 +418,27 @@ impl Value {
         }
     }
 
+    pub fn to_string(&self, gc: &GarbageCollector) -> String {
+        match self {
+            Value::Nil => String::from("Nil"),
+            Value::Number(a) => a.to_string(),
+            Value::Float(a) => a.to_string(),
+            Value::String(a) => a.clone(),
+            Value::Bool(a) => a.to_string(),
+            Value::GcObject(r) => gc.get_str(*r).unwrap_or("Nil".to_string()),
+
+            _ => "<str not implemented>".to_string(),
+        }
+    }
+
+    pub fn dbg_string(&self, gc: &GarbageCollector) -> String {
+        match self {
+            Value::String(a) => format!("'{}'", a),
+
+            _ => self.to_string(gc),
+        }
+    }
+
     //     #[derive(Debug, Clone, PartialEq)]
     // pub enum Operator {
     //     Add,         Done
@@ -457,17 +476,4 @@ impl Value {
     //     Not,     Done
     //     BitwiseNot,Done
     // }
-}
-
-impl ToString for Value {
-    fn to_string(&self) -> String {
-        match self {
-            Value::Nil => String::from("Nil"),
-            Value::Number(a) => a.to_string(),
-            Value::Float(a) => a.to_string(),
-            Value::String(a) => a.clone(),
-            Value::Bool(a) => a.to_string(),
-            _ => unimplemented!("Not implemented to string"),
-        }
-    }
 }

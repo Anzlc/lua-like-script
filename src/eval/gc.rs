@@ -11,7 +11,7 @@ impl GarbageCollector {
         GarbageCollector { heap: HashMap::new() }
     }
 
-    pub fn allocate(&mut self, value: Value) -> GcRef {
+    pub fn allocate(&mut self, value: Box<dyn GcValue>) -> GcRef {
         let id = GarbageCollector::get_id(&value);
         println!("Id: {}", id);
 
@@ -19,15 +19,29 @@ impl GarbageCollector {
         GcRef(id)
     }
 
-    pub fn get(&mut self, gc_ref: GcRef) -> Option<&mut Value> {
+    pub fn get_mut(&mut self, gc_ref: GcRef) -> Option<&mut Box<dyn GcValue>> {
         if let Some(v) = self.heap.get_mut(&gc_ref) {
             return Some(&mut v.value);
         }
         None
     }
 
-    fn get_id(value: &Value) -> u32 {
-        let ptr = value as *const Value;
+    pub fn get(&self, gc_ref: GcRef) -> Option<&Box<dyn GcValue>> {
+        if let Some(v) = self.heap.get(&gc_ref) {
+            return Some(&v.value);
+        }
+        None
+    }
+
+    pub fn get_str(&self, gc_ref: GcRef) -> Option<String> {
+        if let Some(v) = self.heap.get(&gc_ref) {
+            return Some(v.value.str(self));
+        }
+        None
+    }
+
+    fn get_id(value: &Box<dyn GcValue>) -> u32 {
+        let ptr = value as *const Box<dyn GcValue>;
         let id = ptr as u32;
         id >> 1
     }
@@ -43,8 +57,8 @@ impl GarbageCollector {
             self.heap.get_mut(root).unwrap().children = children;
         }
     }
-    pub fn add_children_ref(&mut self, child: GcRef) {
-        if let Some(obj) = self.heap.get_mut(&child) {
+    pub fn add_children_ref(&mut self, parent: GcRef, child: GcRef) {
+        if let Some(obj) = self.heap.get_mut(&parent) {
             obj.children.push(child);
         }
     }
@@ -64,7 +78,7 @@ impl GarbageCollector {
 }
 
 pub struct GcObject {
-    value: Value,
+    value: Box<dyn GcValue>,
     marked: bool,
     children: Vec<GcRef>,
 }
@@ -80,3 +94,15 @@ impl GcObject {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct GcRef(u32);
+
+pub trait GcValue {
+    fn get_referenced_children(&self, gc: &GarbageCollector) -> Vec<GcRef>;
+    fn name(&self) -> &'static str;
+    fn index(&self, index: Value) -> Value;
+    fn set_index(&mut self, index: Value, new_value: Value);
+
+    fn str(&self, gc: &GarbageCollector) -> String {
+        "<gc object>".to_string()
+    }
+    // Add more function if needed
+}

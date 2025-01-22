@@ -2,7 +2,12 @@ use std::{ cell::RefCell, collections::HashMap, rc::Rc };
 
 use crate::{ parser::{ AstNode, ParsedValue, UnaryOp }, tokenizer::Operator };
 
-use super::{ environment::Environment, gc::{ GarbageCollector, GcRef }, value::Value };
+use super::{
+    environment::Environment,
+    gc::{ GarbageCollector, GcRef, GcValue },
+    types::Table,
+    value::Value,
+};
 
 pub struct Interpreter {
     global_env: Rc<RefCell<Environment>>,
@@ -37,6 +42,10 @@ impl Interpreter {
             }
             AstNode::BinaryOp { op, lhs, rhs } => self.eval_bin_op(op, lhs, rhs),
             AstNode::UnaryOp { op, value } => self.eval_unary_op(op, &value),
+            AstNode::Index { base, index } =>
+                self.eval_table_index(
+                    &(AstNode::Index { base: base.to_owned(), index: index.to_owned() }) // FIXME: Joj me ne
+                ),
             _ => unimplemented!("Fucking wait a bit I am implementing this shit now"),
         }
     }
@@ -63,7 +72,7 @@ impl Interpreter {
             Operator::FloorDivide => lhs.floor_div(&rhs),
             Operator::Mod => lhs.modulo(&rhs),
             Operator::Power => lhs.power(&rhs),
-            Operator::Concatenation => lhs.concat(&rhs),
+            Operator::Concatenation => lhs.concat(&rhs, &self.gc),
             Operator::Equals => lhs.equal(&rhs),
             Operator::NotEquals => lhs.not_equal(&rhs),
             Operator::And => lhs.add(&rhs),
@@ -95,8 +104,8 @@ impl Interpreter {
         return self.env_stack.last().unwrap().borrow().get_variable(name).unwrap_or(Value::Nil);
     }
 
-    fn get_table(&mut self, gc_ref: GcRef) -> Option<&mut Value> {
-        self.gc.get(gc_ref)
+    fn get_gc_value(&mut self, gc_ref: GcRef) -> Option<&mut Box<dyn GcValue>> {
+        self.gc.get_mut(gc_ref)
     }
 
     fn eval_table_index(&mut self, index: &AstNode) -> Value {
@@ -104,13 +113,19 @@ impl Interpreter {
             let base = self.eval_table_index(&base);
 
             let index = self.eval(&index);
-            let gc_ref = match base {
-                Value::GcObject(_) => {
-                    return base;
+            match base {
+                Value::GcObject(r) => {
+                    if let Some(t) = self.get_gc_value(r) {
+                        println!("Trying to index to {:?} with {:?}", base, index);
+                        return t.index(index);
+                    }
+                    return Value::Nil;
                 }
                 _ => panic!("base should be Table got {:?}", base),
-            };
+            }
         }
+        //panic!("Should not reach")
+        println!("as asd{:?}", index);
         return self.eval(index);
     }
 
@@ -124,10 +139,6 @@ impl Interpreter {
     }
 
     fn eval_assignment(&mut self, is_local: bool, target: &AstNode, rhs: &AstNode) {
-        let env = match is_local {
-            true => Rc::clone(self.env_stack.last().unwrap()),
-            false => Rc::clone(&self.global_env),
-        };
         match target {
             AstNode::Variable(name) => {
                 let value = self.eval(rhs);
@@ -141,10 +152,10 @@ impl Interpreter {
                     println!("If gc obj");
                     let value = self.eval(rhs);
                     let index = self.eval(index);
-                    if let Some(Value::Table { array, map }) = self.get_table(r) {
+                    if let Some(t) = self.get_gc_value(r) {
                         println!("If table obj");
                         println!("Setting target {:?} with {:?},  to {:?}", target, base, &value);
-                        map.insert(index, value);
+                        t.set_index(index, value);
                     }
                 }
             }
@@ -172,9 +183,7 @@ impl Interpreter {
                     Value::GcObject(_) => {
                         continue;
                     }
-                    Value::Table { array: _, map: _ } => {
-                        continue;
-                    }
+
                     _ => {}
                 }
                 if let Value::GcObject(r) = v {
@@ -184,6 +193,6 @@ impl Interpreter {
             }
         }
 
-        Value::GcObject(self.gc.allocate(Value::Table { array: arr, map }))
+        Value::GcObject(self.gc.allocate(Box::new(Table::new(arr, map))))
     }
 }

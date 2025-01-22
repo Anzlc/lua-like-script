@@ -196,7 +196,7 @@ impl Parser {
                 return Ok(Some(AstNode::Continue));
             }
             Some(Token::Return) => Ok(Some(self.parse_return()?)),
-            Some(t) => Ok(None),
+            Some(t) => Err(format!("Unexpected token {:?}", t)),
             None => Ok(None),
         };
     }
@@ -587,11 +587,12 @@ impl Parser {
                     }
                 }
             }
+            println!("Hello");
             let v = v.clone();
             self.advance();
             return Ok(AstNode::Literal(v.into()));
         }
-
+        println!("Targert???");
         if let Some(target) = self.parse_target()? {
             println!("Curur: {:?}", self.get_current_token());
             if let Some(Token::OpenParen) = self.get_current_token() {
@@ -619,6 +620,7 @@ impl Parser {
 
             return Ok(target);
         }
+        println!("Hello sdss");
 
         if let Some(Token::OpenParen) = self.get_current_token() {
             self.advance();
@@ -680,7 +682,7 @@ impl Parser {
         if let Some(Token::OpenCurly) = self.get_current_token() {
             return self.parse_table();
         }
-
+        println!("Ended lookie");
         Err("Could not parse factor".to_string())
     }
 
@@ -790,49 +792,55 @@ impl Parser {
 
     fn parse_target(&mut self) -> Result<Option<AstNode>, String> {
         // FIXME: Fix this shit
+
+        let mut base;
+
         if let Some(Token::VariableOrFunction(name)) = self.get_current_token() {
-            let name = name.clone();
-            let mut base = AstNode::Variable(name);
+            base = AstNode::Variable(name.to_owned());
             self.advance();
-            loop {
-                match self.get_current_token() {
-                    Some(Token::Dot) => {
+        } else if let Some(Token::OpenCurly) = self.get_current_token() {
+            base = self.parse_table()?;
+        } else {
+            return Ok(None);
+        }
+
+        loop {
+            match self.get_current_token() {
+                Some(Token::Dot) => {
+                    self.advance();
+                    if let Some(Token::VariableOrFunction(i)) = self.get_current_token() {
+                        let i = i.clone();
+                        let index = AstNode::Literal(ParsedValue::String(i));
+                        let indexed = AstNode::Index {
+                            base: Box::new(base),
+                            index: Box::new(index),
+                        };
+                        base = indexed;
                         self.advance();
-                        if let Some(Token::VariableOrFunction(i)) = self.get_current_token() {
-                            let i = i.clone();
-                            let index = AstNode::Literal(ParsedValue::String(i));
-                            let indexed = AstNode::Index {
-                                base: Box::new(base),
-                                index: Box::new(index),
-                            };
-                            base = indexed;
-                            self.advance();
-                        } else {
-                            return Err(
-                                "Cannot index with a number value with . syntax. Try [] instead".to_string()
-                            );
-                        }
-                    }
-                    Some(Token::OpenSquare) => {
-                        self.advance();
-                        let expr = self.parse_expression()?;
-                        if let Some(Token::CloseSquare) = self.get_current_token() {
-                            let indexed = AstNode::Index {
-                                base: Box::new(base),
-                                index: Box::new(expr),
-                            };
-                            base = indexed;
-                            self.advance();
-                        }
-                    }
-                    _ => {
-                        break;
+                    } else {
+                        return Err(
+                            "Cannot index with a number value with . syntax. Try [] instead".to_string()
+                        );
                     }
                 }
+                Some(Token::OpenSquare) => {
+                    self.advance();
+                    let expr = self.parse_expression()?;
+                    if let Some(Token::CloseSquare) = self.get_current_token() {
+                        let indexed = AstNode::Index {
+                            base: Box::new(base),
+                            index: Box::new(expr),
+                        };
+                        base = indexed;
+                        self.advance();
+                    }
+                }
+                _ => {
+                    break;
+                }
             }
-            return Ok(Some(base));
         }
-        Ok(None)
+        return Ok(Some(base));
     }
 
     fn parse_return(&mut self) -> Result<AstNode, String> {

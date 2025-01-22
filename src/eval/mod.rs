@@ -2,6 +2,7 @@ mod interpreter;
 mod gc;
 mod environment;
 mod value;
+mod types;
 
 #[cfg(test)]
 mod tests {
@@ -25,16 +26,12 @@ mod tests {
     #[test]
     fn test_eval() {
         let code =
-            r#"x = {1, 2, 3, hello={1,2,3}}
-        x[1] = "Hello"
-        --ptr = x[2]
-        x["Test"] = 2
-        y = 1 | 2
-        f = -1.25
-        a = "Hello"
-        z = "Len of a is " .. #a
-        --x = 10.2
-        hmm = 10[1]
+            r#"x = {1, 2, 3, hello={1,2,3,"123"}}
+        y = x[1]
+        x[2] = 69
+        z = x.hello[3]
+        x.penis = false
+
         "#;
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());

@@ -51,7 +51,7 @@ impl Environment {
         for entry in self.variables.iter() {
             println!("Variable {} with {:?}", entry.0, entry.1);
             if let Value::GcObject(r) = entry.1 {
-                println!("          GcObject value: {:?}", gc.get(*r));
+                println!("          GcObject value: {:?}", gc.get_str(*r).unwrap());
             }
         }
     }
