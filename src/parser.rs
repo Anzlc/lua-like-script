@@ -80,7 +80,7 @@ impl From<Value> for ParsedValue {
     fn from(value: Value) -> Self {
         match value {
             Value::Nil => ParsedValue::Nil,
-            Value::Int(i) => ParsedValue::Int(i),
+            Value::Int(i, _) => ParsedValue::Int(i),
             Value::Float(f) => ParsedValue::Float(f),
             Value::String(s) => ParsedValue::String(s),
             Value::Bool(b) => ParsedValue::Bool(b),
@@ -573,11 +573,12 @@ impl Parser {
     fn parse_factor(&mut self) -> Result<AstNode, String> {
         println!("current looking at: {:?}", self.get_current_token());
         if let Some(Token::Value(v)) = self.get_current_token() {
-            if let Value::Int(a) = v {
+            if let Value::Int(a, _) = v {
                 if let Some(Token::Dot) = self.peek() {
-                    if let Some(Token::Value(Value::Int(b))) = self.peek_at(2) {
+                    if let Some(Token::Value(Value::Int(b, zeros))) = self.peek_at(2) {
                         let a = *a;
                         let b = *b;
+                        let zeros = *zeros;
 
                         self.advance(); // Dot
                         self.advance(); //Number
@@ -587,10 +588,18 @@ impl Parser {
                             return Ok(AstNode::Literal(ParsedValue::Float(a as f64)));
                         }
                         // Oh it's a float
-                        let f =
-                            (a as f64) +
+                        println!(
+                            "Not whole part: {}",
+                            ((b as f64) /
+                                (10.0f64).powi((b as f64).log10().ceil() as i32).max(10.0f64)) *
+                                (10.0f64 * (zeros as f64))
+                        );
+                        let decimal_part =
                             (b as f64) /
-                                (10.0f64).powi((b as f64).log10().ceil() as i32).max(10.0f64);
+                            (10.0f64).powi((b as f64).log10().ceil() as i32).max(10.0f64) /
+                            (10.0f64).powi(zeros as i32);
+                        let f = (a as f64) + decimal_part;
+
                         return Ok(AstNode::Literal(ParsedValue::Float(f)));
                     }
                 }

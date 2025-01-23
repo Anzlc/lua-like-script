@@ -20,7 +20,7 @@ mod tests {
         assert_eq!(tokenizer.get_tokens(), [
             Token::VariableOrFunction("x".to_string()),
             Token::Set,
-            Token::Value(Value::Int(10)),
+            Token::Value(Value::Int(10, 0)),
         ]);
     }
     #[test]
@@ -53,14 +53,14 @@ mod tests {
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());
         assert_eq!(tokenizer.get_tokens(), [
-            Token::Value(Value::Int(5)),
+            Token::Value(Value::Int(5, 0)),
             Token::Operator(tokenizer::Operator::Add),
-            Token::Value(Value::Int(2)),
+            Token::Value(Value::Int(2, 0)),
             Token::Operator(tokenizer::Operator::Multiply),
             Token::OpenParen,
-            Token::Value(Value::Int(10)),
+            Token::Value(Value::Int(10, 0)),
             Token::Operator(tokenizer::Operator::Add),
-            Token::Value(Value::Int(2)),
+            Token::Value(Value::Int(2, 0)),
             Token::CloseParen,
         ]);
     }

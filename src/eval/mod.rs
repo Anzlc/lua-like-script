@@ -31,7 +31,7 @@ mod tests {
         x[2] = 69
         z = x.hello[3]
         x.penis = false
-        test = 1.01
+        test = 1.010123
 
         "#;
         let mut tokenizer = Tokenizer::new();

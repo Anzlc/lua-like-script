@@ -11,7 +11,7 @@ pub enum Value {
     Nil,
     String(String),
     Float(f64),
-    Int(i64),
+    Int(i64, usize),
     Bool(bool),
 }
 
@@ -236,11 +236,19 @@ impl Tokenizer {
     }
 
     fn try_match_token(token: &str) -> Option<Token> {
+        fn count_leading_zeros(input: &str) -> usize {
+            input
+                .chars()
+                .take_while(|&c| c == '0')
+                .count()
+        }
+
         if let Some(t) = Tokenizer::get_token_from_keyword(token) {
             return Some(t);
         }
         if let Ok(t) = token.parse::<i64>() {
-            return Some(Token::Value(Value::Int(t)));
+            println!("token: {}, count: {}", token, count_leading_zeros(token));
+            return Some(Token::Value(Value::Int(t, count_leading_zeros(&token))));
         }
         if let Ok(t) = token.parse::<f64>() {
             return Some(Token::Value(Value::Float(t)));
