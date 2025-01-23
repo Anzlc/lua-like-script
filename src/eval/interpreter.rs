@@ -94,7 +94,24 @@ impl Interpreter {
             _ => panic!("Not a binary op"),
         }
     }
-
+    fn eval_multiple(&mut self, list: Vec<AstNode>) {
+        for node in list {
+            self.eval(&node);
+        }
+    }
+    fn add_stack_frame(&mut self) {
+        let env = Environment::with_parent(&self.get_last_scope());
+        self.env_stack.push(Rc::new(RefCell::new(env)));
+    }
+    fn pop_stack_frame(&mut self) {
+        if self.env_stack.len() <= 1 {
+            panic!("Cannot pop global scope");
+        }
+        let _ = self.env_stack.pop();
+    }
+    fn get_last_scope(&self) -> Rc<RefCell<Environment>> {
+        return Rc::clone(self.env_stack.last().unwrap());
+    }
     fn get_variable(&self, name: &String) -> Value {
         println!(
             "Got var ({name}): {:?}",
