@@ -46,6 +46,10 @@ impl Interpreter {
                 self.eval_table_index(
                     &(AstNode::Index { base: base.to_owned(), index: index.to_owned() }) // FIXME: Joj me ne
                 ),
+            AstNode::Scope { stmts } => {
+                self.eval_scope(stmts);
+                Value::Nil /* FIXME: Returns should return the value (idk about continue, pass, ...) */
+            }
             _ => unimplemented!("Fucking wait a bit I am implementing this shit now"),
         }
     }
@@ -94,10 +98,15 @@ impl Interpreter {
             _ => panic!("Not a binary op"),
         }
     }
-    fn eval_multiple(&mut self, list: Vec<AstNode>) {
+    fn eval_multiple(&mut self, list: &[AstNode]) {
         for node in list {
             self.eval(&node);
         }
+    }
+    fn eval_scope(&mut self, stmts: &[AstNode]) {
+        self.add_stack_frame();
+        self.eval_multiple(stmts);
+        self.pop_stack_frame();
     }
     fn add_stack_frame(&mut self) {
         let env = Environment::with_parent(&self.get_last_scope());
