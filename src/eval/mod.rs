@@ -32,6 +32,15 @@ mod tests {
         z = x.hello[3]
         x.penis = false
         test = 1.010123
+        y = 2
+        if y  % 3 == 0 then
+            res = "Fizz"
+        elseif y % 7 == 0 then
+            res = "Buzz"
+        else 
+            res = "Err"
+        end
+
 
         "#;
         let mut tokenizer = Tokenizer::new();

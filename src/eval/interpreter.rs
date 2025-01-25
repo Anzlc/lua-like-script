@@ -46,12 +46,44 @@ impl Interpreter {
                 self.eval_table_index(
                     &(AstNode::Index { base: base.to_owned(), index: index.to_owned() }) // FIXME: Joj me ne
                 ),
+            AstNode::If { condition, scope, elseif, else_scope } => {
+                self.eval_if(condition, scope, elseif, else_scope);
+                Value::Nil
+            }
             AstNode::Scope { stmts } => {
                 self.eval_scope(stmts);
                 Value::Nil /* FIXME: Returns should return the value (idk about continue, pass, ...) */
             }
             _ => unimplemented!("Fucking wait a bit I am implementing this shit now"),
         }
+    }
+
+    fn eval_if(
+        &mut self,
+        condition: &AstNode,
+        scope: &AstNode,
+        elseif: &Vec<AstNode>,
+        else_scope: &Option<AstNode>
+    ) -> bool {
+        if self.eval(&condition).is_truthy() {
+            if let AstNode::Scope { stmts } = scope {
+                self.eval_scope(stmts);
+                return true;
+            }
+        }
+        for elif in elseif {
+            if let AstNode::If { condition, scope, elseif, else_scope } = elif {
+                if self.eval_if(condition, scope, elseif, else_scope) {
+                    return false;
+                }
+            }
+        }
+
+        if let Some(AstNode::Scope { stmts }) = else_scope {
+            self.eval_scope(&stmts);
+        }
+
+        false
     }
     fn eval_unary_op(&mut self, op: &UnaryOp, value: &AstNode) -> Value {
         let value = self.eval(value);
