@@ -77,6 +77,9 @@ impl Interpreter {
                     Value::Nil
                 ) /* FIXME: Returns should return the value (idk about continue, pass, ...) */
             }
+            AstNode::Continue => ControlFlow::Continue,
+            AstNode::Break => ControlFlow::Break,
+            AstNode::Return { expr } => ControlFlow::Return(self.eval(&expr).get_normal()),
             _ => unimplemented!("Fucking wait a bit I am implementing this shit now"),
         }
     }
