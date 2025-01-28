@@ -15,12 +15,22 @@ pub struct Interpreter {
     gc: GarbageCollector,
 }
 
-enum ControlFlow {
+#[derive(Debug, Clone)]
+pub enum ControlFlow {
     Normal(Value),
     Return(Value),
     Continue,
     Break,
     // TODO:  Maybe Throw(Value) variant ??
+}
+
+impl ControlFlow {
+    fn get_normal(&self) -> Value {
+        if let ControlFlow::Normal(n) = self {
+            return n.clone();
+        }
+        panic!("{:?} is not ControlFlow::Normal", &self)
+    }
 }
 
 impl Interpreter {
@@ -37,30 +47,35 @@ impl Interpreter {
     pub fn print_vars(&mut self) {
         self.env_stack.last().unwrap().borrow().print_vars(&mut self.gc);
     }
-    pub fn eval(&mut self, node: &AstNode) -> Value {
+    pub fn eval(&mut self, node: &AstNode) -> ControlFlow {
         match node {
             AstNode::Literal(e) if !matches!(e, ParsedValue::Table { array: _, map: _ }) =>
-                Value::from(e.clone()),
+                ControlFlow::Normal(Value::from(e.clone())),
             AstNode::Literal(e) if matches!(e, ParsedValue::Table { array: _, map: _ }) =>
-                self.eval_table(e),
-            AstNode::Variable(s) => self.get_variable(s),
+                ControlFlow::Normal(self.eval_table(e)),
+            AstNode::Variable(s) => ControlFlow::Normal(self.get_variable(s)),
             AstNode::Assignment { is_local, target, rhs } => {
                 self.eval_assignment(*is_local, target, rhs);
-                Value::Nil
+                ControlFlow::Normal(Value::Nil)
             }
-            AstNode::BinaryOp { op, lhs, rhs } => self.eval_bin_op(op, lhs, rhs),
-            AstNode::UnaryOp { op, value } => self.eval_unary_op(op, &value),
+            AstNode::BinaryOp { op, lhs, rhs } =>
+                ControlFlow::Normal(self.eval_bin_op(op, lhs, rhs)),
+            AstNode::UnaryOp { op, value } => ControlFlow::Normal(self.eval_unary_op(op, &value)),
             AstNode::Index { base, index } =>
-                self.eval_table_index(
-                    &(AstNode::Index { base: base.to_owned(), index: index.to_owned() }) // FIXME: Joj me ne
+                ControlFlow::Normal(
+                    self.eval_table_index(
+                        &(AstNode::Index { base: base.to_owned(), index: index.to_owned() }) // FIXME: Joj me ne
+                    )
                 ),
             AstNode::If { condition, scope, elseif, else_scope } => {
                 self.eval_if(condition, scope, elseif, else_scope);
-                Value::Nil
+                ControlFlow::Normal(Value::Nil)
             }
             AstNode::Scope { stmts } => {
                 self.eval_scope(stmts);
-                Value::Nil /* FIXME: Returns should return the value (idk about continue, pass, ...) */
+                ControlFlow::Normal(
+                    Value::Nil
+                ) /* FIXME: Returns should return the value (idk about continue, pass, ...) */
             }
             _ => unimplemented!("Fucking wait a bit I am implementing this shit now"),
         }
@@ -73,7 +88,7 @@ impl Interpreter {
         elseif: &Vec<AstNode>,
         else_scope: &Option<AstNode>
     ) -> bool {
-        if self.eval(&condition).is_truthy() {
+        if self.eval(&condition).get_normal().is_truthy() {
             if let AstNode::Scope { stmts } = scope {
                 self.eval_scope(stmts);
                 return true;
@@ -94,7 +109,7 @@ impl Interpreter {
         false
     }
     fn eval_unary_op(&mut self, op: &UnaryOp, value: &AstNode) -> Value {
-        let value = self.eval(value);
+        let value = self.eval(value).get_normal();
 
         match op {
             UnaryOp::Negative => value.unary_negative(),
@@ -105,8 +120,8 @@ impl Interpreter {
     }
 
     fn eval_bin_op(&mut self, op: &Operator, lhs: &AstNode, rhs: &AstNode) -> Value {
-        let lhs = self.eval(lhs);
-        let rhs = self.eval(rhs);
+        let lhs = self.eval(lhs).get_normal();
+        let rhs = self.eval(rhs).get_normal();
 
         match op {
             Operator::Add => lhs.add(&rhs),
@@ -178,7 +193,7 @@ impl Interpreter {
         if let AstNode::Index { base, index } = index {
             let base = self.eval_table_index(&base);
 
-            let index = self.eval(&index);
+            let index = self.eval(&index).get_normal();
             match base {
                 Value::GcObject(r) => {
                     if let Some(t) = self.get_gc_value(r) {
@@ -192,7 +207,7 @@ impl Interpreter {
         }
         //panic!("Should not reach")
         println!("as asd{:?}", index);
-        return self.eval(index);
+        return self.eval(index).get_normal();
     }
 
     fn set_variable(&mut self, is_local: bool, name: &String, value: Value) {
@@ -207,7 +222,7 @@ impl Interpreter {
     fn eval_assignment(&mut self, is_local: bool, target: &AstNode, rhs: &AstNode) {
         match target {
             AstNode::Variable(name) => {
-                let value = self.eval(rhs);
+                let value = self.eval(rhs).get_normal();
                 self.set_variable(is_local, name, value);
             }
             AstNode::Index { base, index } => {
@@ -216,8 +231,8 @@ impl Interpreter {
                 println!("Base: {:?}", base);
                 if let Value::GcObject(r) = base {
                     println!("If gc obj");
-                    let value = self.eval(rhs);
-                    let index = self.eval(index);
+                    let value = self.eval(rhs).get_normal();
+                    let index = self.eval(index).get_normal();
                     if let Some(t) = self.get_gc_value(r) {
                         println!("If table obj");
                         println!("Setting target {:?} with {:?},  to {:?}", target, base, &value);
@@ -234,7 +249,7 @@ impl Interpreter {
         let mut refs: Vec<GcRef> = vec![];
         if let ParsedValue::Table { array, map: m } = e {
             for element in array {
-                let element = self.eval(element);
+                let element = self.eval(element).get_normal();
                 if let Value::GcObject(r) = element {
                     refs.push(r);
                 }
@@ -242,8 +257,8 @@ impl Interpreter {
                 arr.push(element);
             }
             for (k, v) in m.iter() {
-                let k = self.eval(k);
-                let v = self.eval(v);
+                let k = self.eval(k).get_normal();
+                let v = self.eval(v).get_normal();
 
                 match k {
                     Value::GcObject(_) => {
