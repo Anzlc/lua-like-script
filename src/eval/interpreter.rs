@@ -15,6 +15,14 @@ pub struct Interpreter {
     gc: GarbageCollector,
 }
 
+enum ControlFlow {
+    Normal(Value),
+    Return(Value),
+    Continue,
+    Break,
+    // TODO:  Maybe Throw(Value) variant ??
+}
+
 impl Interpreter {
     pub fn new() -> Self {
         let global_env = Rc::new(RefCell::new(Environment::new()));
