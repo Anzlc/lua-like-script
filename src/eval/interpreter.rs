@@ -67,15 +67,16 @@ impl Interpreter {
                         &(AstNode::Index { base: base.to_owned(), index: index.to_owned() }) // FIXME: Joj me ne
                     )
                 ),
+            AstNode::While { condition, scope } => {
+                return self.eval_while(condition, scope);
+            }
             AstNode::If { condition, scope, elseif, else_scope } => {
-                self.eval_if(condition, scope, elseif, else_scope);
-                ControlFlow::Normal(Value::Nil)
+                return self
+                    .eval_if(condition, scope, elseif, else_scope)
+                    .unwrap_or(ControlFlow::Normal(Value::Nil));
             }
             AstNode::Scope { stmts } => {
-                self.eval_scope(stmts);
-                ControlFlow::Normal(
-                    Value::Nil
-                ) /* FIXME: Returns should return the value (idk about continue, pass, ...) */
+                return self.eval_scope(stmts);
             }
             AstNode::Continue => ControlFlow::Continue,
             AstNode::Break => ControlFlow::Break,
@@ -84,32 +85,53 @@ impl Interpreter {
         }
     }
 
+    fn eval_while(&mut self, condition: &AstNode, scope: &AstNode) -> ControlFlow {
+        while self.eval(condition).get_normal().is_truthy() {
+            if let AstNode::Scope { stmts } = scope {
+                match self.eval_scope(stmts) {
+                    ControlFlow::Return(value) => {
+                        return ControlFlow::Return(value);
+                    }
+                    ControlFlow::Continue => {
+                        continue;
+                    }
+                    ControlFlow::Break => {
+                        break;
+                    }
+                    ControlFlow::Normal(value) => {/* Do nothing */}
+                }
+            } else {
+                panic!("Expected Scope");
+            }
+        }
+        ControlFlow::Normal(Value::Nil)
+    }
+
     fn eval_if(
         &mut self,
         condition: &AstNode,
         scope: &AstNode,
         elseif: &Vec<AstNode>,
         else_scope: &Option<AstNode>
-    ) -> bool {
+    ) -> Option<ControlFlow> {
         if self.eval(&condition).get_normal().is_truthy() {
             if let AstNode::Scope { stmts } = scope {
-                self.eval_scope(stmts);
-                return true;
+                return Some(self.eval_scope(stmts));
             }
         }
         for elif in elseif {
             if let AstNode::If { condition, scope, elseif, else_scope } = elif {
-                if self.eval_if(condition, scope, elseif, else_scope) {
-                    return false;
+                if let Some(flow) = self.eval_if(condition, scope, elseif, else_scope) {
+                    return Some(flow);
                 }
             }
         }
 
         if let Some(AstNode::Scope { stmts }) = else_scope {
-            self.eval_scope(&stmts);
+            return Some(self.eval_scope(&stmts));
         }
 
-        false
+        None
     }
     fn eval_unary_op(&mut self, op: &UnaryOp, value: &AstNode) -> Value {
         let value = self.eval(value).get_normal();
@@ -156,15 +178,25 @@ impl Interpreter {
             _ => panic!("Not a binary op"),
         }
     }
-    fn eval_multiple(&mut self, list: &[AstNode]) {
+    fn eval_multiple(&mut self, list: &[AstNode]) -> ControlFlow {
         for node in list {
-            self.eval(&node);
+            let evaled = self.eval(&node);
+            match evaled {
+                ControlFlow::Normal(_) => {
+                    continue;
+                }
+                _ => {
+                    return evaled;
+                }
+            }
         }
+        ControlFlow::Normal(Value::Nil)
     }
-    fn eval_scope(&mut self, stmts: &[AstNode]) {
+    fn eval_scope(&mut self, stmts: &[AstNode]) -> ControlFlow {
         self.add_stack_frame();
-        self.eval_multiple(stmts);
+        let y = self.eval_multiple(stmts);
         self.pop_stack_frame();
+        y
     }
     fn add_stack_frame(&mut self) {
         let env = Environment::with_parent(&self.get_last_scope());

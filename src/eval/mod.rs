@@ -26,21 +26,20 @@ mod tests {
     #[test]
     fn test_eval() {
         let code =
-            r#"x = {1, 2, 3, hello={1,2,3,"123"}}
-        y = x[1]
-        x[2] = 69
-        z = x.hello[3]
-        x.penis = false
-        test = 1.010123
-        y = 2
-        if y  % 3 == 0 then
-            res = "Fizz"
-        elseif y % 7 == 0 then
-            res = "Buzz"
-        else 
-            res = "Err"
-        end
-
+            r#"
+            i = 0
+            z = 0
+            while z < 10 do
+                z += 1
+                if i >= 5 then
+                    continue
+                    
+                end
+                i += 1
+                return 10
+                
+            end
+            y = "Hello"[10]
 
         "#;
         let mut tokenizer = Tokenizer::new();
