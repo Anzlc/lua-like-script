@@ -572,6 +572,35 @@ impl Parser {
     }
     fn parse_factor(&mut self) -> Result<AstNode, String> {
         println!("current looking at: {:?}", self.get_current_token());
+
+        println!("Targert???");
+        if let Some(target) = self.parse_target()? {
+            println!("Curur: {:?}", self.get_current_token());
+            if let Some(Token::OpenParen) = self.get_current_token() {
+                self.advance();
+
+                let mut args: Vec<AstNode> = vec![];
+
+                loop {
+                    println!("Self: {:?}", self.get_current_token());
+                    if let Some(Token::CloseParen) = self.get_current_token() {
+                        return Ok(AstNode::FunctionCall { target: Box::new(target), args });
+                    }
+                    args.push(self.parse_expression()?);
+
+                    if let Some(Token::Comma) = self.get_current_token() {
+                        self.advance(); // Skip ,
+
+                        continue;
+                    }
+                    println!("Selsssf: {:?}", self.get_current_token());
+                    self.advance();
+                    return Ok(AstNode::FunctionCall { target: Box::new(target), args });
+                }
+            }
+
+            return Ok(target);
+        }
         if let Some(Token::Value(v)) = self.get_current_token() {
             if let Value::Int(a, _) = v {
                 if let Some(Token::Dot) = self.peek() {
@@ -608,34 +637,6 @@ impl Parser {
             let v = v.clone();
             self.advance();
             return Ok(AstNode::Literal(v.into()));
-        }
-        println!("Targert???");
-        if let Some(target) = self.parse_target()? {
-            println!("Curur: {:?}", self.get_current_token());
-            if let Some(Token::OpenParen) = self.get_current_token() {
-                self.advance();
-
-                let mut args: Vec<AstNode> = vec![];
-
-                loop {
-                    println!("Self: {:?}", self.get_current_token());
-                    if let Some(Token::CloseParen) = self.get_current_token() {
-                        return Ok(AstNode::FunctionCall { target: Box::new(target), args });
-                    }
-                    args.push(self.parse_expression()?);
-
-                    if let Some(Token::Comma) = self.get_current_token() {
-                        self.advance(); // Skip ,
-
-                        continue;
-                    }
-                    println!("Selsssf: {:?}", self.get_current_token());
-                    self.advance();
-                    return Ok(AstNode::FunctionCall { target: Box::new(target), args });
-                }
-            }
-
-            return Ok(target);
         }
         println!("Hello sdss");
 
@@ -817,6 +818,10 @@ impl Parser {
             self.advance();
         } else if let Some(Token::OpenCurly) = self.get_current_token() {
             base = self.parse_table()?;
+        } else if let Some(Token::Value(Value::String(s))) = self.get_current_token() {
+            println!("Let him cook");
+            base = AstNode::Literal(ParsedValue::String(s.clone()));
+            self.advance();
         } else {
             return Ok(None);
         }

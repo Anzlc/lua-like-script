@@ -78,7 +78,10 @@ impl GcValue for Table {
             .map(|(k, v)| format!("[{}]={}", k.dbg_string(gc), v.dbg_string(gc)))
             .collect::<Vec<String>>()
             .join(", ");
-
-        format!("{{{arr_part}, {map_part}}}")
+        if arr_part.len() > 0 {
+            format!("{{{arr_part}, {map_part}}}")
+        } else {
+            format!("{{{map_part}}}")
+        }
     }
 }

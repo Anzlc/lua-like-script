@@ -237,7 +237,24 @@ impl Interpreter {
                     }
                     return Value::Nil;
                 }
-                _ => panic!("base should be Table got {:?}", base),
+                Value::String(s) => {
+                    if let Value::Number(n) = index {
+                        if n >= 0 && n < (s.len() as i64) {
+                            return Value::String(
+                                s
+                                    .chars()
+                                    .nth(n as usize)
+                                    .unwrap()
+                                    .to_string()
+                            );
+                        }
+                        panic!(
+                            "String can only be indexed with a positive Number and a Number less then len of string"
+                        );
+                    }
+                    panic!("String can only be indexed with Number");
+                }
+                _ => panic!("base should be Table or String got {:?}", base),
             }
         }
         //panic!("Should not reach")

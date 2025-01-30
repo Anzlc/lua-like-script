@@ -27,19 +27,13 @@ mod tests {
     fn test_eval() {
         let code =
             r#"
+            str = "Hello World"
             i = 0
-            z = 0
-            while z < 10 do
-                z += 1
-                if i >= 5 then
-                    continue
-                    
-                end
+            table = {}
+            while i < #str do
+                table[i] = str[i]
                 i += 1
-                return 10
-                
             end
-            y = "Hello"[10]
 
         "#;
         let mut tokenizer = Tokenizer::new();
