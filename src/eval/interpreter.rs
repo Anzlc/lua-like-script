@@ -1,6 +1,6 @@
 use std::{ cell::RefCell, collections::HashMap, rc::Rc };
 
-use crate::{ parser::{ AstNode, ParsedValue, UnaryOp }, tokenizer::Operator };
+use crate::{ parser::{ AstNode, ForType, ParsedValue, UnaryOp }, tokenizer::Operator };
 
 use super::{
     environment::Environment,
@@ -81,10 +81,49 @@ impl Interpreter {
             AstNode::Continue => ControlFlow::Continue,
             AstNode::Break => ControlFlow::Break,
             AstNode::Return { expr } => ControlFlow::Return(self.eval(&expr).get_normal()),
+            AstNode::For { variable, for_type, scope } => {
+                match &for_type {
+                    &ForType::Generic(i) => { self.eval_for_generic(variable, scope, &i) }
+                    &ForType::Range { start: _, end: _, step: _ } => {
+                        ControlFlow::Normal(Value::Nil)
+                    }
+                }
+            }
             _ => unimplemented!("Fucking wait a bit I am implementing this shit now"),
         }
     }
+    fn eval_for_generic(
+        &mut self,
+        name: &String,
+        scope: &AstNode,
+        iterable: &AstNode
+    ) -> ControlFlow {
+        let iterable = self.eval(iterable).get_normal();
+        let iterable = iterable.iter(&mut self.gc);
 
+        while let Some(v) = self.gc.get_mut(iterable).unwrap().next() {
+            // I dont like this -> ^^
+
+            if let AstNode::Scope { stmts } = scope {
+                self.add_stack_frame();
+                self.set_variable(true, name, v);
+                match self.eval_multiple(&stmts) {
+                    ControlFlow::Normal(value) => {}
+                    ControlFlow::Return(value) => {
+                        return ControlFlow::Return(value);
+                    }
+                    ControlFlow::Continue => {
+                        continue;
+                    }
+                    ControlFlow::Break => {
+                        break;
+                    }
+                }
+                self.pop_stack_frame();
+            }
+        }
+        ControlFlow::Normal(Value::Nil)
+    }
     fn eval_while(&mut self, condition: &AstNode, scope: &AstNode) -> ControlFlow {
         while self.eval(condition).get_normal().is_truthy() {
             if let AstNode::Scope { stmts } = scope {

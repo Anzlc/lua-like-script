@@ -1,8 +1,8 @@
 use std::{ collections::HashMap, fmt::format, hash::Hash };
 
-use crate::parser::ParsedValue;
+use crate::{ eval::{ types, value }, parser::ParsedValue };
 
-use super::gc::{ GarbageCollector, GcObject, GcRef };
+use super::{ gc::{ GarbageCollector, GcObject, GcRef }, types::Iterable };
 
 #[derive(Clone, Debug)]
 pub enum Value {
@@ -70,8 +70,29 @@ impl From<ParsedValue> for Value {
 }
 
 impl Value {
+    pub fn iter(&self, gc: &mut GarbageCollector) -> GcRef {
+        if let Value::String(s) = self {
+            let iterable = types::Iterable::new(
+                s
+                    .chars()
+                    .map(|c| Value::String(c.to_string()))
+                    .collect()
+            );
+            return gc.allocate(Box::new(iterable));
+        }
+        if let Value::GcObject(r) = self {
+            let obj = gc.get(*r).unwrap();
+
+            if obj.name() != "iterable" {
+                return gc.allocate(Box::new(obj.iter()));
+            } else {
+                return *r;
+            }
+        }
+        panic!("Iter not implemented on {:?}", self)
+    }
     //Returns owned Value because it works like that
-    //TODO: Think about Tables
+
     pub fn add(&self, other: &Value) -> Value {
         match (self, other) {
             (Value::Nil, _) => Value::Nil,

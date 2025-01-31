@@ -28,10 +28,11 @@ mod tests {
         let code =
             r#"
             str = "Hello World"
-            i = 0
+            
             table = {}
-            while i < #str do
-                table[i] = str[i]
+            i = 0
+            for c in str do
+                table[i] = c
                 i += 1
             end
 

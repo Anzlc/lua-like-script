@@ -1,6 +1,6 @@
 use std::{ collections::HashMap, mem };
 
-use super::value::Value;
+use super::{ types::Iterable, value::Value };
 
 pub struct GarbageCollector {
     heap: HashMap<GcRef, GcObject>,
@@ -103,6 +103,18 @@ pub trait GcValue {
 
     fn str(&self, gc: &GarbageCollector) -> String {
         "<gc object>".to_string()
+    }
+
+    fn run_meta_function(&mut self, name: &str, args: &[Value]) -> Value {
+        unimplemented!("Function {} is not implemented on {}", name, self.name())
+    }
+
+    fn next(&mut self) -> Option<Value> {
+        unimplemented!("Function next not implemented on {}", self.name())
+    }
+
+    fn iter(&self) -> Iterable {
+        unimplemented!("Cannot iter over {}", self.name())
     }
     // Add more function if needed
 }

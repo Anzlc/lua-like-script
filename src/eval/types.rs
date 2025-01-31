@@ -1,6 +1,6 @@
-use std::{ collections::HashMap, fmt::format };
+use std::{ collections::HashMap, fmt::format, path::Iter };
 
-use super::{ gc::{ GarbageCollector, GcRef, GcValue }, value::Value };
+use super::{ gc::{ self, GarbageCollector, GcRef, GcValue }, value::Value };
 
 pub struct Table {
     array: Vec<Value>,
@@ -84,11 +84,23 @@ impl GcValue for Table {
             format!("{{{map_part}}}")
         }
     }
+
+    fn iter(&self) -> Iterable {
+        let iterable = Iterable::new(self.array.clone());
+        iterable
+    }
 }
 
 pub struct Iterable {
     values: Vec<Value>,
-    index: usize,
+}
+
+impl Iterable {
+    pub fn new(values: Vec<Value>) -> Self {
+        let mut values = values;
+        values.reverse();
+        Iterable { values }
+    }
 }
 
 impl GcValue for Iterable {
@@ -109,7 +121,7 @@ impl GcValue for Iterable {
     }
 
     fn name(&self) -> &'static str {
-        "<iterable>"
+        "iterable"
     }
 
     fn index(&self, index: Value) -> Value {
@@ -118,5 +130,9 @@ impl GcValue for Iterable {
 
     fn set_index(&mut self, index: Value, new_value: Value) {
         panic!("Set index not implemented for Iterable")
+    }
+
+    fn next(&mut self) -> Option<Value> {
+        self.values.pop()
     }
 }
