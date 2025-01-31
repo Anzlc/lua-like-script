@@ -85,3 +85,38 @@ impl GcValue for Table {
         }
     }
 }
+
+pub struct Iterable {
+    values: Vec<Value>,
+    index: usize,
+}
+
+impl GcValue for Iterable {
+    fn get_referenced_children(&self, gc: &GarbageCollector) -> Vec<GcRef> {
+        let mut r = vec![];
+
+        for element in self.values.iter() {
+            if let Value::GcObject(obj) = element {
+                r.push(*obj);
+                if let Some(g) = gc.get(*obj) {
+                    for e in g.get_referenced_children(gc) {
+                        r.push(e);
+                    }
+                }
+            }
+        }
+        r
+    }
+
+    fn name(&self) -> &'static str {
+        "<iterable>"
+    }
+
+    fn index(&self, index: Value) -> Value {
+        panic!("Cannot index iterable")
+    }
+
+    fn set_index(&mut self, index: Value, new_value: Value) {
+        panic!("Set index not implemented for Iterable")
+    }
+}
