@@ -84,14 +84,68 @@ impl Interpreter {
             AstNode::For { variable, for_type, scope } => {
                 match &for_type {
                     &ForType::Generic(i) => { self.eval_for_generic(variable, scope, &i) }
-                    &ForType::Range { start: _, end: _, step: _ } => {
-                        ControlFlow::Normal(Value::Nil)
+                    &ForType::Range { start: s, end: e, step: st } => {
+                        let start = self.eval(s).get_normal();
+                        let end = self.eval(e).get_normal();
+                        let step = self.eval(st).get_normal();
+                        match (start, end, step) {
+                            (Value::Number(start), Value::Number(end), Value::Number(step)) => {
+                                return self.eval_for_numeric(variable, scope, (start, end, step));
+                            }
+                            _ =>
+                                panic!(
+                                    "For numeric loop can only be constructed from whole Numbers"
+                                ),
+                        }
                     }
                 }
             }
             _ => unimplemented!("Fucking wait a bit I am implementing this shit now"),
         }
     }
+    fn eval_for_numeric(
+        &mut self,
+        name: &String,
+        scope: &AstNode,
+        range: (i64, i64, i64)
+    ) -> ControlFlow {
+        let mut i = range.0;
+
+        loop {
+            if range.2 >= 0 {
+                if i >= range.1 {
+                    break;
+                }
+            } else {
+                if i <= range.1 {
+                    break;
+                }
+            }
+
+            if let AstNode::Scope { stmts } = scope {
+                self.add_stack_frame();
+                self.set_variable(true, name, Value::Number(i));
+                match self.eval_multiple(&stmts) {
+                    ControlFlow::Normal(_) => {}
+                    ControlFlow::Return(value) => {
+                        return ControlFlow::Return(value);
+                    }
+                    ControlFlow::Continue => {
+                        continue;
+                    }
+                    ControlFlow::Break => {
+                        break;
+                    }
+                }
+                self.pop_stack_frame();
+                i += range.2;
+            } else {
+                panic!("Expected scope for For scope");
+            }
+        }
+        ControlFlow::Normal(Value::Nil)
+    }
+
     fn eval_for_generic(
         &mut self,
         name: &String,

@@ -32,8 +32,12 @@ mod tests {
             table = {}
             i = 0
             for c in str do
-                table[i] = c
+                --table[i] = c
                 i += 1
+            end
+
+            for i in 10,1,-1 do
+                table[i] = 2^i
             end
 
         "#;
