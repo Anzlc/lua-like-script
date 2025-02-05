@@ -1,6 +1,6 @@
-use std::{ collections::HashMap, mem };
+use std::{ cell::RefCell, collections::HashMap, mem, rc::Rc };
 
-use super::{ types::Iterable, value::Value };
+use super::{ interpreter::{ self, Interpreter }, types::Iterable, value::Value };
 
 pub struct GarbageCollector {
     heap: HashMap<GcRef, GcObject>,
@@ -15,27 +15,24 @@ impl GarbageCollector {
         let id = GarbageCollector::get_id(&value);
         println!("Id: {}", id);
 
-        self.heap.insert(GcRef(id), GcObject { value, marked: false, children: vec![] });
+        self.heap.insert(GcRef(id), GcObject {
+            value: Rc::new(RefCell::new(value)),
+            marked: false,
+            children: vec![],
+        });
         GcRef(id)
     }
 
-    pub fn get_mut(&mut self, gc_ref: GcRef) -> Option<&mut Box<dyn GcValue>> {
-        if let Some(v) = self.heap.get_mut(&gc_ref) {
-            return Some(&mut v.value);
-        }
-        None
-    }
-
-    pub fn get(&self, gc_ref: GcRef) -> Option<&Box<dyn GcValue>> {
+    pub fn get(&self, gc_ref: GcRef) -> Option<Rc<RefCell<Box<dyn GcValue>>>> {
         if let Some(v) = self.heap.get(&gc_ref) {
-            return Some(&v.value);
+            return Some(Rc::clone(&v.value));
         }
         None
     }
 
     pub fn get_str(&self, gc_ref: GcRef) -> Option<String> {
         if let Some(v) = self.heap.get(&gc_ref) {
-            return Some(v.value.str(self));
+            return Some(v.value.borrow().str(self));
         }
         None
     }
@@ -78,7 +75,7 @@ impl GarbageCollector {
 }
 
 pub struct GcObject {
-    value: Box<dyn GcValue>,
+    value: Rc<RefCell<Box<dyn GcValue>>>,
     marked: bool,
     children: Vec<GcRef>,
 }
@@ -98,8 +95,12 @@ pub struct GcRef(u32);
 pub trait GcValue {
     fn get_referenced_children(&self, gc: &GarbageCollector) -> Vec<GcRef>;
     fn name(&self) -> &'static str;
-    fn index(&self, index: Value) -> Value;
-    fn set_index(&mut self, index: Value, new_value: Value);
+    fn index(&self, index: Value) -> Value {
+        unimplemented!("Cannot index on type {}", self.name())
+    }
+    fn set_index(&mut self, index: Value, new_value: Value) {
+        unimplemented!("Cannot set index on type {}", self.name())
+    }
 
     fn str(&self, gc: &GarbageCollector) -> String {
         "<gc object>".to_string()
@@ -115,6 +116,9 @@ pub trait GcValue {
 
     fn iter(&self) -> Iterable {
         unimplemented!("Cannot iter over {}", self.name())
+    }
+    fn call(&self, args: &[Value]) -> Value {
+        unimplemented!("Type {} is not callable", self.name())
     }
     // Add more function if needed
 }

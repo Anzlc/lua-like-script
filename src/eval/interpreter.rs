@@ -1,11 +1,11 @@
-use std::{ cell::RefCell, collections::HashMap, rc::Rc };
+use std::{ cell::RefCell, collections::HashMap, rc::Rc, sync::atomic };
 
 use crate::{ parser::{ AstNode, ForType, ParsedValue, UnaryOp }, tokenizer::Operator };
 
 use super::{
     environment::Environment,
     gc::{ GarbageCollector, GcRef, GcValue },
-    types::Table,
+    types::{ self, Table, Function },
     value::Value,
 };
 
@@ -100,9 +100,56 @@ impl Interpreter {
                     }
                 }
             }
+            AstNode::FunctionDeclaration { name, arguments, body } => {
+                self.declare_function(name, arguments, &body);
+                ControlFlow::Normal(Value::Nil)
+            }
+            AstNode::FunctionCall { target, args } => {
+                let base = self.eval(&target).get_normal();
+
+                // if let Value::GcObject(r) = base {
+                //     if let Some(v) = self.get_gc_value(r) {
+                //         let evaled_args = vec![];
+
+                //         for a in args {
+                //             evaled_args.push(self.eval(a).get_normal());
+                //         }
+                //         return ControlFlow::Normal(v.call(self, evaled_args.as_slice()));
+                //     }
+                // }
+
+                ControlFlow::Normal(Value::Nil)
+            }
             _ => unimplemented!("Fucking wait a bit I am implementing this shit now"),
         }
     }
+    fn declare_function(&mut self, name: &String, args: &Vec<String>, body: &AstNode) {
+        let function = Function::new(args.to_owned(), body.to_owned());
+        let r = self.gc.allocate(Box::new(function));
+        self.set_variable(true, name, Value::GcObject(r));
+    }
+
+    pub(crate) fn eval_function_scope(
+        &mut self,
+        scope: &AstNode,
+        args: Vec<(&String, &Value)>
+    ) -> ControlFlow {
+        if let AstNode::Scope { stmts } = scope {
+            self.add_stack_frame();
+            for (name, value) in args.iter() {
+                self.set_variable(true, name, value.to_owned().to_owned());
+            }
+            let evaled = match self.eval_multiple(stmts) {
+                ControlFlow::Return(v) => ControlFlow::Normal(v),
+                ControlFlow::Normal(_) => ControlFlow::Normal(Value::Nil),
+                _ => panic!("Cannot use break and continue directly in function"),
+            };
+            self.pop_stack_frame();
+            return evaled;
+        }
+        panic!("Expected scope for function body")
+    }
+
     fn eval_for_numeric(
         &mut self,
         name: &String,
@@ -154,8 +201,9 @@ impl Interpreter {
     ) -> ControlFlow {
         let iterable = self.eval(iterable).get_normal();
         let iterable = iterable.iter(&mut self.gc);
-
-        while let Some(v) = self.gc.get_mut(iterable).unwrap().next() {
+        let iterable = self.gc.get(iterable).unwrap();
+        let mut iterable = iterable.borrow_mut();
+        while let Some(v) = iterable.next() {
             // I dont like this -> ^^
 
             if let AstNode::Scope { stmts } = scope {
@@ -313,8 +361,8 @@ impl Interpreter {
         return self.env_stack.last().unwrap().borrow().get_variable(name).unwrap_or(Value::Nil);
     }
 
-    fn get_gc_value(&mut self, gc_ref: GcRef) -> Option<&mut Box<dyn GcValue>> {
-        self.gc.get_mut(gc_ref)
+    fn get_gc_value(&mut self, gc_ref: GcRef) -> Option<Rc<RefCell<Box<dyn GcValue>>>> {
+        self.gc.get(gc_ref)
     }
 
     fn eval_table_index(&mut self, index: &AstNode) -> Value {
@@ -326,7 +374,7 @@ impl Interpreter {
                 Value::GcObject(r) => {
                     if let Some(t) = self.get_gc_value(r) {
                         println!("Trying to index to {:?} with {:?}", base, index);
-                        return t.index(index);
+                        return t.borrow().index(index);
                     }
                     return Value::Nil;
                 }
@@ -381,7 +429,7 @@ impl Interpreter {
                     if let Some(t) = self.get_gc_value(r) {
                         println!("If table obj");
                         println!("Setting target {:?} with {:?},  to {:?}", target, base, &value);
-                        t.set_index(index, value);
+                        t.borrow_mut().set_index(index, value);
                     }
                 }
             }

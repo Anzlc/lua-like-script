@@ -40,6 +40,10 @@ mod tests {
                 table[i] = 2^i
             end
 
+            function print(x)
+                local y = x
+            end
+
         "#;
         let mut tokenizer = Tokenizer::new();
         tokenizer.tokenize(code.to_string());

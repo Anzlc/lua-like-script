@@ -1,5 +1,7 @@
 use std::{ collections::HashMap, fmt::format, path::Iter };
 
+use crate::parser::AstNode;
+
 use super::{ gc::{ self, GarbageCollector, GcRef, GcValue }, value::Value };
 
 pub struct Table {
@@ -21,7 +23,7 @@ impl GcValue for Table {
             if let Value::GcObject(obj) = element {
                 r.push(*obj);
                 if let Some(g) = gc.get(*obj) {
-                    for e in g.get_referenced_children(gc) {
+                    for e in g.borrow().get_referenced_children(gc) {
                         r.push(e);
                     }
                 }
@@ -32,7 +34,7 @@ impl GcValue for Table {
             if let Value::GcObject(obj) = v {
                 r.push(*obj);
                 if let Some(g) = gc.get(*obj) {
-                    for e in g.get_referenced_children(gc) {
+                    for e in g.borrow().get_referenced_children(gc) {
                         r.push(e);
                     }
                 }
@@ -111,7 +113,7 @@ impl GcValue for Iterable {
             if let Value::GcObject(obj) = element {
                 r.push(*obj);
                 if let Some(g) = gc.get(*obj) {
-                    for e in g.get_referenced_children(gc) {
+                    for e in g.borrow().get_referenced_children(gc) {
                         r.push(e);
                     }
                 }
@@ -134,5 +136,45 @@ impl GcValue for Iterable {
 
     fn next(&mut self) -> Option<Value> {
         self.values.pop()
+    }
+}
+
+pub enum Function {
+    UserDefined {
+        args: Vec<String>,
+        body: AstNode,
+    },
+    FnPointer(fn(&mut GarbageCollector, Vec<Value>) -> Value),
+}
+
+impl Function {
+    pub fn new(args: Vec<String>, body: AstNode) -> Self {
+        Function::UserDefined {
+            args,
+            body,
+        }
+    }
+}
+
+impl GcValue for Function {
+    fn str(&self, gc: &GarbageCollector) -> String {
+        "function".to_string()
+    }
+    fn name(&self) -> &'static str {
+        "function"
+    }
+
+    fn get_referenced_children(&self, gc: &GarbageCollector) -> Vec<GcRef> {
+        vec![] // TODO: Idk what is should do here
+    }
+
+    fn call(&self, values: &[Value]) -> Value {
+        match self {
+            Function::UserDefined { args, body } => {
+                //interpreter.eval_function_scope(body, args.iter().zip(values.iter()).collect());
+            }
+            _ => unimplemented!("function call of this type not yet implemented"),
+        }
+        Value::Nil
     }
 }

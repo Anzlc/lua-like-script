@@ -83,8 +83,8 @@ impl Value {
         if let Value::GcObject(r) = self {
             let obj = gc.get(*r).unwrap();
 
-            if obj.name() != "iterable" {
-                return gc.allocate(Box::new(obj.iter()));
+            if obj.borrow().name() != "iterable" {
+                return gc.allocate(Box::new(obj.borrow().iter()));
             } else {
                 return *r;
             }
