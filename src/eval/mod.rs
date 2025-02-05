@@ -27,22 +27,20 @@ mod tests {
     fn test_eval() {
         let code =
             r#"
-            str = "Hello World"
             
-            table = {}
-            i = 0
-            for c in str do
-                --table[i] = c
-                i += 1
+            
+            function power_of_2(x)
+                return 2^x
             end
+
+            table = {}
+            
 
             for i in 10,1,-1 do
-                table[i] = 2^i
+                table[i] = power_of_2(i)
             end
 
-            function print(x)
-                local y = x
-            end
+            
 
         "#;
         let mut tokenizer = Tokenizer::new();

@@ -117,7 +117,7 @@ pub trait GcValue {
     fn iter(&self) -> Iterable {
         unimplemented!("Cannot iter over {}", self.name())
     }
-    fn call(&self, args: &[Value]) -> Value {
+    fn call(&self, interpreter: &mut Interpreter, args: &[Value]) -> Value {
         unimplemented!("Type {} is not callable", self.name())
     }
     // Add more function if needed

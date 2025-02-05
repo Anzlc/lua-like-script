@@ -12,7 +12,7 @@ use super::{
 pub struct Interpreter {
     global_env: Rc<RefCell<Environment>>,
     env_stack: Vec<Rc<RefCell<Environment>>>,
-    gc: GarbageCollector,
+    pub(crate) gc: GarbageCollector,
 }
 
 #[derive(Debug, Clone)]
@@ -25,7 +25,7 @@ pub enum ControlFlow {
 }
 
 impl ControlFlow {
-    fn get_normal(&self) -> Value {
+    pub fn get_normal(&self) -> Value {
         if let ControlFlow::Normal(n) = self {
             return n.clone();
         }
@@ -107,16 +107,16 @@ impl Interpreter {
             AstNode::FunctionCall { target, args } => {
                 let base = self.eval(&target).get_normal();
 
-                // if let Value::GcObject(r) = base {
-                //     if let Some(v) = self.get_gc_value(r) {
-                //         let evaled_args = vec![];
+                if let Value::GcObject(r) = base {
+                    if let Some(v) = self.get_gc_value(r) {
+                        let mut evaled_args = vec![];
 
-                //         for a in args {
-                //             evaled_args.push(self.eval(a).get_normal());
-                //         }
-                //         return ControlFlow::Normal(v.call(self, evaled_args.as_slice()));
-                //     }
-                // }
+                        for a in args {
+                            evaled_args.push(self.eval(a).get_normal());
+                        }
+                        return ControlFlow::Normal(v.borrow().call(self, evaled_args.as_slice()));
+                    }
+                }
 
                 ControlFlow::Normal(Value::Nil)
             }

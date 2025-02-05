@@ -584,6 +584,7 @@ impl Parser {
                 loop {
                     println!("Self: {:?}", self.get_current_token());
                     if let Some(Token::CloseParen) = self.get_current_token() {
+                        self.advance();
                         return Ok(AstNode::FunctionCall { target: Box::new(target), args });
                     }
                     args.push(self.parse_expression()?);

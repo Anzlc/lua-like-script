@@ -2,7 +2,11 @@ use std::{ collections::HashMap, fmt::format, path::Iter };
 
 use crate::parser::AstNode;
 
-use super::{ gc::{ self, GarbageCollector, GcRef, GcValue }, value::Value };
+use super::{
+    gc::{ self, GarbageCollector, GcRef, GcValue },
+    interpreter::Interpreter,
+    value::Value,
+};
 
 pub struct Table {
     array: Vec<Value>,
@@ -144,7 +148,7 @@ pub enum Function {
         args: Vec<String>,
         body: AstNode,
     },
-    FnPointer(fn(&mut GarbageCollector, Vec<Value>) -> Value),
+    FnPointer(fn(&mut GarbageCollector, &[Value]) -> Value),
 }
 
 impl Function {
@@ -168,12 +172,19 @@ impl GcValue for Function {
         vec![] // TODO: Idk what is should do here
     }
 
-    fn call(&self, values: &[Value]) -> Value {
+    fn call(&self, interpreter: &mut Interpreter, values: &[Value]) -> Value {
         match self {
             Function::UserDefined { args, body } => {
-                //interpreter.eval_function_scope(body, args.iter().zip(values.iter()).collect());
+                if values.len() != args.len() {
+                    panic!("Expected {} args found {}", args.len(), values.len());
+                }
+                return interpreter
+                    .eval_function_scope(body, args.iter().zip(values.iter()).collect())
+                    .get_normal();
             }
-            _ => unimplemented!("function call of this type not yet implemented"),
+            Function::FnPointer(ptr) => {
+                return ptr(&mut interpreter.gc, values);
+            }
         }
         Value::Nil
     }
