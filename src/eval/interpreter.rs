@@ -105,8 +105,9 @@ impl Interpreter {
                 ControlFlow::Normal(Value::Nil)
             }
             AstNode::FunctionCall { target, args } => {
+                println!("Target: {:?}", target);
                 let base = self.eval(&target).get_normal();
-
+                println!("Evaled base: {:?}", base);
                 if let Value::GcObject(r) = base {
                     if let Some(v) = self.get_gc_value(r) {
                         let mut evaled_args = vec![];
@@ -117,8 +118,7 @@ impl Interpreter {
                         return ControlFlow::Normal(v.borrow().call(self, evaled_args.as_slice()));
                     }
                 }
-
-                ControlFlow::Normal(Value::Nil)
+                panic!("{:?} can't be called!", base)
             }
             _ => unimplemented!("Fucking wait a bit I am implementing this shit now"),
         }
@@ -348,6 +348,13 @@ impl Interpreter {
             panic!("Cannot pop global scope");
         }
         let _ = self.env_stack.pop();
+        let mut roots: Vec<GcRef> = vec![];
+
+        for env in self.env_stack.iter() {
+            roots.extend_from_slice(env.borrow().get_roots().as_slice());
+        }
+
+        self.gc.collect_garbage(roots.as_slice());
     }
     fn get_last_scope(&self) -> Rc<RefCell<Environment>> {
         return Rc::clone(self.env_stack.last().unwrap());

@@ -60,12 +60,18 @@ impl GarbageCollector {
         }
     }
     pub fn collect_garbage(&mut self, roots: &[GcRef]) {
+        println!("Collected garbage");
         // Mark phase
         for root in roots {
             self.mark_root(root);
         }
+
+        let before = self.heap.len();
+
         // Sweep phase
         self.heap.retain(|_, v| v.marked);
+
+        println!("Collected {} heaps.", before - self.heap.len());
 
         //Reset
         for v in self.heap.values_mut() {

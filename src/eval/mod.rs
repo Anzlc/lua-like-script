@@ -29,16 +29,24 @@ mod tests {
             r#"
             
             
-            function power_of_2(x)
-                return 2^x
+            function factorial(x)
+                
+                if x == 1 then
+                    return 1
+                end
+
+                return x * factorial(x-1)
+                
             end
 
-            table = {}
+            f = factorial
+
+            t = {"fd"}
             
 
-            for i in 10,1,-1 do
-                table[i] = power_of_2(i)
-            end
+            result = f(5)
+
+            
 
             
 
