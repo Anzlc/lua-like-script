@@ -29,22 +29,7 @@ mod tests {
             r#"
             
             
-            function factorial(x)
-                
-                if x == 1 then
-                    return 1
-                end
-
-                return x * factorial(x-1)
-                
-            end
-
-            f = factorial
-
-            t = {"fd"}
-            
-
-            result = f(5)
+            x = x.hello():print().hello_world
 
             
 

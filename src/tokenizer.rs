@@ -106,6 +106,7 @@ const OPERATORS: &[&str] = &[
     "~",
     ".",
     "#",
+    ":",
 ];
 const NON_EXTENDABLE: &[&str] = &[")", "(", ",", "[", "]", "{", "}"];
 impl Tokenizer {

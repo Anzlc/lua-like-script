@@ -18,6 +18,12 @@ pub enum AstNode {
         target: Box<AstNode>,
         args: Vec<AstNode>,
     },
+    MethodCall {
+        target: Box<AstNode>,
+        name: String,
+        args: Vec<AstNode>,
+        include_self: bool,
+    },
     Variable(String),
     Literal(ParsedValue),
 
@@ -833,13 +839,51 @@ impl Parser {
                     self.advance();
                     if let Some(Token::VariableOrFunction(i)) = self.get_current_token() {
                         let i = i.clone();
-                        let index = AstNode::Literal(ParsedValue::String(i));
-                        let indexed = AstNode::Index {
-                            base: Box::new(base),
-                            index: Box::new(index),
-                        };
-                        base = indexed;
                         self.advance();
+
+                        // A function call
+                        if let Some(Token::OpenParen) = self.get_current_token() {
+                            self.advance();
+                            let mut args: Vec<AstNode> = vec![];
+
+                            loop {
+                                println!("Self: {:?}", self.get_current_token());
+                                if let Some(Token::CloseParen) = self.get_current_token() {
+                                    self.advance();
+                                    base = AstNode::MethodCall {
+                                        target: Box::new(base),
+                                        name: i,
+                                        args,
+                                        include_self: true,
+                                    };
+                                    break;
+                                }
+                                args.push(self.parse_expression()?);
+
+                                if let Some(Token::Comma) = self.get_current_token() {
+                                    self.advance(); // Skip ,
+
+                                    continue;
+                                }
+                                println!("Selsssf: {:?}", self.get_current_token());
+                                self.advance();
+                                base = AstNode::MethodCall {
+                                    target: Box::new(base),
+                                    name: i,
+                                    args,
+                                    include_self: true,
+                                };
+                                break;
+                            }
+                        } else {
+                            let index = AstNode::Literal(ParsedValue::String(i));
+                            let indexed = AstNode::Index {
+                                base: Box::new(base),
+                                index: Box::new(index),
+                            };
+                            base = indexed;
+                            self.advance();
+                        }
                     } else {
                         return Err(
                             "Cannot index with a number value with . syntax. Try [] instead".to_string()
@@ -858,6 +902,47 @@ impl Parser {
                         self.advance();
                     }
                 }
+                Some(Token::Colon) => {
+                    self.advance();
+                    if let Some(Token::VariableOrFunction(i)) = self.get_current_token() {
+                        let i = i.clone();
+                        self.advance();
+                        let mut args: Vec<AstNode> = vec![];
+
+                        self.advance_token(Token::OpenParen)?;
+
+                        loop {
+                            println!("Self: {:?}", self.get_current_token());
+                            if let Some(Token::CloseParen) = self.get_current_token() {
+                                self.advance();
+                                base = AstNode::MethodCall {
+                                    target: Box::new(base),
+                                    name: i,
+                                    args,
+                                    include_self: false,
+                                };
+                                break;
+                            }
+                            args.push(self.parse_expression()?);
+
+                            if let Some(Token::Comma) = self.get_current_token() {
+                                self.advance(); // Skip ,
+
+                                continue;
+                            }
+                            println!("Selsssf: {:?}", self.get_current_token());
+                            self.advance();
+                            base = AstNode::MethodCall {
+                                target: Box::new(base),
+                                name: i,
+                                args,
+                                include_self: false,
+                            };
+                            break;
+                        }
+                    }
+                }
+
                 _ => {
                     break;
                 }
