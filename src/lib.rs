@@ -91,6 +91,7 @@ mod tests {
                                     ParsedValue::String("Is this real chat".to_string())
                                 )
                             ],
+                            include_self: false,
                         }),
                     }),
                     rhs: Box::new(AstNode::BinaryOp {
@@ -150,6 +151,7 @@ mod tests {
                     stmts: vec![AstNode::FunctionCall {
                         target: Box::new(AstNode::Variable("print".to_string())),
                         args: vec![AstNode::Variable("i".to_string())],
+                        include_self: false,
                     }],
                 }),
             }]
@@ -175,6 +177,7 @@ mod tests {
                     stmts: vec![AstNode::FunctionCall {
                         target: Box::new(AstNode::Variable("print".to_string())),
                         args: vec![AstNode::Variable("i".to_string())],
+                        include_self: false,
                     }],
                 }),
             }]
@@ -200,6 +203,7 @@ mod tests {
                     stmts: vec![AstNode::FunctionCall {
                         target: Box::new(AstNode::Variable("print".to_string())),
                         args: vec![AstNode::Variable("i".to_string())],
+                        include_self: false,
                     }],
                 }),
             }]
@@ -225,6 +229,7 @@ mod tests {
                     stmts: vec![AstNode::FunctionCall {
                         target: Box::new(AstNode::Variable("print".to_string())),
                         args: vec![AstNode::Literal(ParsedValue::Int(1))],
+                        include_self: false,
                     }],
                 }),
                 elseif: vec![],

@@ -104,7 +104,7 @@ impl Interpreter {
                 self.declare_function(name, arguments, &body);
                 ControlFlow::Normal(Value::Nil)
             }
-            AstNode::FunctionCall { target, args } => {
+            AstNode::FunctionCall { target, args, include_self } => {
                 println!("Target: {:?}", target);
                 let base = self.eval(&target).get_normal();
                 println!("Evaled base: {:?}", base);

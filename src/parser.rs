@@ -14,13 +14,9 @@ pub enum AstNode {
         target: Box<AstNode>,
         rhs: Box<AstNode>,
     },
+
     FunctionCall {
         target: Box<AstNode>,
-        args: Vec<AstNode>,
-    },
-    MethodCall {
-        target: Box<AstNode>,
-        name: String,
         args: Vec<AstNode>,
         include_self: bool,
     },
@@ -467,7 +463,11 @@ impl Parser {
                 println!("{:?}", self.get_current_token());
                 if let Some(Token::CloseParen) = self.get_current_token() {
                     self.advance_token(Token::CloseParen)?;
-                    return Ok(AstNode::FunctionCall { target: Box::new(target), args });
+                    return Ok(AstNode::FunctionCall {
+                        target: Box::new(target),
+                        args,
+                        include_self: false,
+                    });
                 }
                 args.push(self.parse_expression()?);
 
@@ -477,7 +477,11 @@ impl Parser {
                 }
 
                 self.advance_token(Token::CloseParen)?;
-                return Ok(AstNode::FunctionCall { target: Box::new(target), args });
+                return Ok(AstNode::FunctionCall {
+                    target: Box::new(target),
+                    args,
+                    include_self: false,
+                });
             }
         }
         if let Some(Token::OperatorAssign(op)) = self.get_current_token() {
@@ -591,7 +595,11 @@ impl Parser {
                     println!("Self: {:?}", self.get_current_token());
                     if let Some(Token::CloseParen) = self.get_current_token() {
                         self.advance();
-                        return Ok(AstNode::FunctionCall { target: Box::new(target), args });
+                        return Ok(AstNode::FunctionCall {
+                            target: Box::new(target),
+                            args,
+                            include_self: false,
+                        });
                     }
                     args.push(self.parse_expression()?);
 
@@ -602,7 +610,11 @@ impl Parser {
                     }
                     println!("Selsssf: {:?}", self.get_current_token());
                     self.advance();
-                    return Ok(AstNode::FunctionCall { target: Box::new(target), args });
+                    return Ok(AstNode::FunctionCall {
+                        target: Box::new(target),
+                        args,
+                        include_self: false,
+                    });
                 }
             }
 
@@ -841,49 +853,13 @@ impl Parser {
                         let i = i.clone();
                         self.advance();
 
-                        // A function call
-                        if let Some(Token::OpenParen) = self.get_current_token() {
-                            self.advance();
-                            let mut args: Vec<AstNode> = vec![];
-
-                            loop {
-                                println!("Self: {:?}", self.get_current_token());
-                                if let Some(Token::CloseParen) = self.get_current_token() {
-                                    self.advance();
-                                    base = AstNode::MethodCall {
-                                        target: Box::new(base),
-                                        name: i,
-                                        args,
-                                        include_self: true,
-                                    };
-                                    break;
-                                }
-                                args.push(self.parse_expression()?);
-
-                                if let Some(Token::Comma) = self.get_current_token() {
-                                    self.advance(); // Skip ,
-
-                                    continue;
-                                }
-                                println!("Selsssf: {:?}", self.get_current_token());
-                                self.advance();
-                                base = AstNode::MethodCall {
-                                    target: Box::new(base),
-                                    name: i,
-                                    args,
-                                    include_self: true,
-                                };
-                                break;
-                            }
-                        } else {
-                            let index = AstNode::Literal(ParsedValue::String(i));
-                            let indexed = AstNode::Index {
-                                base: Box::new(base),
-                                index: Box::new(index),
-                            };
-                            base = indexed;
-                            self.advance();
-                        }
+                        let index = AstNode::Literal(ParsedValue::String(i));
+                        let indexed = AstNode::Index {
+                            base: Box::new(base),
+                            index: Box::new(index),
+                        };
+                        base = indexed;
+                        self.advance();
                     } else {
                         return Err(
                             "Cannot index with a number value with . syntax. Try [] instead".to_string()
@@ -906,8 +882,13 @@ impl Parser {
                     self.advance();
                     if let Some(Token::VariableOrFunction(i)) = self.get_current_token() {
                         let i = i.clone();
+                        let indexed = AstNode::Index {
+                            base: Box::new(base),
+                            index: Box::new(AstNode::Literal(ParsedValue::String(i))),
+                        };
+                        base = indexed;
                         self.advance();
-                        let mut args: Vec<AstNode> = vec![];
+                        let mut args: Vec<AstNode> = vec![base.clone()];
 
                         self.advance_token(Token::OpenParen)?;
 
@@ -915,11 +896,11 @@ impl Parser {
                             println!("Self: {:?}", self.get_current_token());
                             if let Some(Token::CloseParen) = self.get_current_token() {
                                 self.advance();
-                                base = AstNode::MethodCall {
+                                base = AstNode::FunctionCall {
                                     target: Box::new(base),
-                                    name: i,
+
                                     args,
-                                    include_self: false,
+                                    include_self: true,
                                 };
                                 break;
                             }
@@ -932,11 +913,11 @@ impl Parser {
                             }
                             println!("Selsssf: {:?}", self.get_current_token());
                             self.advance();
-                            base = AstNode::MethodCall {
+                            base = AstNode::FunctionCall {
                                 target: Box::new(base),
-                                name: i,
+
                                 args,
-                                include_self: false,
+                                include_self: true,
                             };
                             break;
                         }
