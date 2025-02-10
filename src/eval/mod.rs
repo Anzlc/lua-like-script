@@ -27,9 +27,11 @@ mod tests {
     fn test_eval() {
         let code =
             r#"
-            
-            
-            x = x.hello():print().hello_world
+            function fn(x)
+                return 2^x
+            end
+
+            res = fn(5)
 
             
 

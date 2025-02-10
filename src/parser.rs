@@ -450,6 +450,7 @@ impl Parser {
         };
 
         if let Some(Token::OpenParen) = self.get_current_token() {
+            println!("Hello");
             self.advance();
             let mut args: Vec<AstNode> = vec![];
 
@@ -575,6 +576,36 @@ impl Parser {
     }
     fn parse_factor(&mut self) -> Result<AstNode, String> {
         if let Some(target) = self.parse_target()? {
+            if let Some(Token::OpenParen) = self.get_current_token() {
+                let mut args: Vec<AstNode> = vec![];
+
+                self.advance_token(Token::OpenParen)?;
+
+                loop {
+                    if let Some(Token::CloseParen) = self.get_current_token() {
+                        self.advance();
+                        return Ok(AstNode::FunctionCall {
+                            target: Box::new(target),
+                            args,
+                            include_self: false,
+                        });
+                    }
+                    args.push(self.parse_expression()?);
+
+                    if let Some(Token::Comma) = self.get_current_token() {
+                        self.advance(); // Skip ,
+
+                        continue;
+                    }
+
+                    self.advance();
+                    return Ok(AstNode::FunctionCall {
+                        target: Box::new(target),
+                        args,
+                        include_self: false,
+                    });
+                }
+            }
             return Ok(target);
         }
         if let Some(Token::Value(v)) = self.get_current_token() {
