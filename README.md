@@ -1,5 +1,5 @@
 **Status**: WIP
 **Goals**:
 - no_std
-- binding of Rust functions
+- binding for Rust functions
 - ...
