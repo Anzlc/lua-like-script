@@ -586,37 +586,6 @@ impl Parser {
         println!("Targert???");
         if let Some(target) = self.parse_target()? {
             println!("Curur: {:?}", self.get_current_token());
-            if let Some(Token::OpenParen) = self.get_current_token() {
-                self.advance();
-
-                let mut args: Vec<AstNode> = vec![];
-
-                loop {
-                    println!("Self: {:?}", self.get_current_token());
-                    if let Some(Token::CloseParen) = self.get_current_token() {
-                        self.advance();
-                        return Ok(AstNode::FunctionCall {
-                            target: Box::new(target),
-                            args,
-                            include_self: false,
-                        });
-                    }
-                    args.push(self.parse_expression()?);
-
-                    if let Some(Token::Comma) = self.get_current_token() {
-                        self.advance(); // Skip ,
-
-                        continue;
-                    }
-                    println!("Selsssf: {:?}", self.get_current_token());
-                    self.advance();
-                    return Ok(AstNode::FunctionCall {
-                        target: Box::new(target),
-                        args,
-                        include_self: false,
-                    });
-                }
-            }
 
             return Ok(target);
         }
@@ -849,10 +818,9 @@ impl Parser {
             match self.get_current_token() {
                 Some(Token::Dot) => {
                     self.advance();
+                    println!("Hmmm is that a index with dot???");
                     if let Some(Token::VariableOrFunction(i)) = self.get_current_token() {
                         let i = i.clone();
-                        self.advance();
-
                         let index = AstNode::Literal(ParsedValue::String(i));
                         let indexed = AstNode::Index {
                             base: Box::new(base),
@@ -860,6 +828,40 @@ impl Parser {
                         };
                         base = indexed;
                         self.advance();
+
+                        if let Some(Token::OpenParen) = self.get_current_token() {
+                            let mut args: Vec<AstNode> = vec![];
+                            self.advance();
+                            loop {
+                                println!("Self: {:?}", self.get_current_token());
+                                if let Some(Token::CloseParen) = self.get_current_token() {
+                                    self.advance();
+                                    base = AstNode::FunctionCall {
+                                        target: Box::new(base),
+
+                                        args,
+                                        include_self: false,
+                                    };
+                                    break;
+                                }
+                                args.push(self.parse_expression()?);
+
+                                if let Some(Token::Comma) = self.get_current_token() {
+                                    self.advance(); // Skip ,
+
+                                    continue;
+                                }
+                                println!("Selsssf: {:?}", self.get_current_token());
+                                self.advance_token(Token::CloseParen)?;
+                                base = AstNode::FunctionCall {
+                                    target: Box::new(base),
+
+                                    args,
+                                    include_self: false,
+                                };
+                                break;
+                            }
+                        }
                     } else {
                         return Err(
                             "Cannot index with a number value with . syntax. Try [] instead".to_string()
@@ -888,7 +890,7 @@ impl Parser {
                         };
                         base = indexed;
                         self.advance();
-                        let mut args: Vec<AstNode> = vec![base.clone()];
+                        let mut args: Vec<AstNode> = vec![];
 
                         self.advance_token(Token::OpenParen)?;
 
