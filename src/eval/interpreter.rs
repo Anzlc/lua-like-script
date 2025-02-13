@@ -111,7 +111,9 @@ impl Interpreter {
                 if let Value::GcObject(r) = base {
                     if let Some(v) = self.get_gc_value(r) {
                         let mut evaled_args = vec![];
-
+                        if *include_self {
+                            //evaled_args.push(Value::GcObject());
+                        }
                         for a in args {
                             evaled_args.push(self.eval(a).get_normal());
                         }
@@ -381,7 +383,9 @@ impl Interpreter {
                 Value::GcObject(r) => {
                     if let Some(t) = self.get_gc_value(r) {
                         println!("Trying to index to {:?} with {:?}", base, index);
-                        return t.borrow().index(index);
+                        if let Some(indexed) = t.borrow().index(index.clone()) {
+                            return indexed;
+                        }
                     }
                     return Value::Nil;
                 }
@@ -473,7 +477,7 @@ impl Interpreter {
                 map.insert(k, v);
             }
         }
-
-        Value::GcObject(self.gc.allocate(Box::new(Table::new(arr, map))))
+        let table = Table::new(arr, map);
+        Value::GcObject(self.gc.allocate(Box::new(table)))
     }
 }

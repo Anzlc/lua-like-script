@@ -27,11 +27,8 @@ mod tests {
     fn test_eval() {
         let code =
             r#"
-            function fn(x)
-                return 2^x
-            end
-
-            res = fn(5)
+            table = {}
+            x = table:append(10)
 
             
 

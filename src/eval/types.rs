@@ -1,4 +1,4 @@
-use std::{ collections::HashMap, fmt::format, path::Iter };
+use std::{ collections::HashMap, fmt::format, num::NonZeroUsize, path::Iter };
 
 use crate::parser::AstNode;
 
@@ -16,6 +16,17 @@ pub struct Table {
 impl Table {
     pub fn new(array: Vec<Value>, map: HashMap<Value, Value>) -> Self {
         Table { array, map }
+    }
+}
+
+impl Table {
+    pub fn append(&mut self, gc: &mut GarbageCollector, args: &[Value]) -> Value {
+        assert_eq!(args.len(), 1, "Insert expected 1 argument got {}", args.len());
+
+        self.array.push(args[0].clone());
+
+        //table.array.push(args[1].clone());
+        Value::Nil
     }
 }
 
@@ -52,15 +63,16 @@ impl GcValue for Table {
         "table"
     }
 
-    fn index(&self, index: Value) -> Value {
+    fn index(&self, index: Value) -> Option<Value> {
         if let Some(v) = self.map.get(&index) {
-            return v.clone();
+            return Some(v.clone());
         } else if let Value::Number(n) = index {
             if n >= 0 && n < (self.array.len() as i64) {
-                return self.array[n as usize].clone();
+                return Some(self.array[n as usize].clone());
             }
         }
-        Value::Nil
+
+        None
     }
 
     fn set_index(&mut self, index: Value, new_value: Value) {
@@ -130,14 +142,6 @@ impl GcValue for Iterable {
         "iterable"
     }
 
-    fn index(&self, index: Value) -> Value {
-        panic!("Cannot index iterable")
-    }
-
-    fn set_index(&mut self, index: Value, new_value: Value) {
-        panic!("Set index not implemented for Iterable")
-    }
-
     fn next(&mut self) -> Option<Value> {
         self.values.pop()
     }
@@ -186,6 +190,5 @@ impl GcValue for Function {
                 return ptr(&mut interpreter.gc, values);
             }
         }
-        Value::Nil
     }
 }

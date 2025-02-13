@@ -1,5 +1,6 @@
-use std::{ cell::RefCell, collections::HashMap, mem, rc::Rc };
+use std::{ any::Any, cell::RefCell, collections::HashMap, mem, rc::Rc };
 
+use downcast_rs::{ Downcast, impl_downcast };
 use super::{ interpreter::{ self, Interpreter }, types::Iterable, value::Value };
 
 pub struct GarbageCollector {
@@ -98,10 +99,10 @@ impl GcObject {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct GcRef(u32);
 
-pub trait GcValue {
+pub trait GcValue: Downcast {
     fn get_referenced_children(&self, gc: &GarbageCollector) -> Vec<GcRef>;
     fn name(&self) -> &'static str;
-    fn index(&self, index: Value) -> Value {
+    fn index(&self, index: Value) -> Option<Value> {
         unimplemented!("Cannot index on type {}", self.name())
     }
     fn set_index(&mut self, index: Value, new_value: Value) {
@@ -112,8 +113,8 @@ pub trait GcValue {
         "<gc object>".to_string()
     }
 
-    fn run_meta_function(&mut self, name: &str, args: &[Value]) -> Value {
-        unimplemented!("Function {} is not implemented on {}", name, self.name())
+    fn run_meta_function(&mut self, name: &str, gc: &mut GarbageCollector) -> Value {
+        Value::Nil
     }
 
     fn next(&mut self) -> Option<Value> {
@@ -126,5 +127,8 @@ pub trait GcValue {
     fn call(&self, interpreter: &mut Interpreter, args: &[Value]) -> Value {
         unimplemented!("Type {} is not callable", self.name())
     }
+
     // Add more function if needed
 }
+
+impl_downcast!(GcValue);
