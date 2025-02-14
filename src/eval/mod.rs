@@ -28,7 +28,13 @@ mod tests {
         let code =
             r#"
             table = {}
-            x = table:append(10)
+            function fn()
+                res = "Workie"
+            end
+
+            table.fn = fn
+            table.fn()
+            
 
             
 

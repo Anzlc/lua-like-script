@@ -104,16 +104,14 @@ impl Interpreter {
                 self.declare_function(name, arguments, &body);
                 ControlFlow::Normal(Value::Nil)
             }
-            AstNode::FunctionCall { target, args, include_self } => {
+            AstNode::FunctionCall { target, args } => {
                 println!("Target: {:?}", target);
                 let base = self.eval(&target).get_normal();
                 println!("Evaled base: {:?}", base);
                 if let Value::GcObject(r) = base {
                     if let Some(v) = self.get_gc_value(r) {
                         let mut evaled_args = vec![];
-                        if *include_self {
-                            //evaled_args.push(Value::GcObject());
-                        }
+
                         for a in args {
                             evaled_args.push(self.eval(a).get_normal());
                         }
