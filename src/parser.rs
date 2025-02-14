@@ -554,6 +554,7 @@ impl Parser {
         if let Some(target) = self.parse_target()? {
             return Ok(target);
         }
+
         if let Some(Token::Value(v)) = self.get_current_token() {
             if let Value::Int(a, _) = v {
                 if let Some(Token::Dot) = self.peek() {
@@ -788,29 +789,19 @@ impl Parser {
                         };
                         base = indexed;
                         self.advance();
-
-                        if let Some(Token::OpenParen) = self.get_current_token() {
-                            let mut args: Vec<AstNode> = vec![];
-                            self.advance();
-                            loop {
-                                if let Some(Token::CloseParen) = self.get_current_token() {
-                                    self.advance();
-                                    base = AstNode::FunctionCall {
-                                        target: Box::new(base),
-
-                                        args,
-                                    };
-                                    break;
-                                }
-                                args.push(self.parse_expression()?);
-
-                                if let Some(Token::Comma) = self.get_current_token() {
-                                    self.advance(); // Skip ,
-
-                                    continue;
-                                }
-
-                                self.advance_token(Token::CloseParen)?;
+                    } else {
+                        return Err(
+                            "Cannot index with a number value with . syntax. Try [] instead".to_string()
+                        );
+                    }
+                }
+                Some(Token::OpenParen) => {
+                    if let Some(Token::OpenParen) = self.get_current_token() {
+                        let mut args: Vec<AstNode> = vec![];
+                        self.advance();
+                        loop {
+                            if let Some(Token::CloseParen) = self.get_current_token() {
+                                self.advance();
                                 base = AstNode::FunctionCall {
                                     target: Box::new(base),
 
@@ -818,11 +809,22 @@ impl Parser {
                                 };
                                 break;
                             }
+                            args.push(self.parse_expression()?);
+
+                            if let Some(Token::Comma) = self.get_current_token() {
+                                self.advance(); // Skip ,
+
+                                continue;
+                            }
+
+                            self.advance_token(Token::CloseParen)?;
+                            base = AstNode::FunctionCall {
+                                target: Box::new(base),
+
+                                args,
+                            };
+                            break;
                         }
-                    } else {
-                        return Err(
-                            "Cannot index with a number value with . syntax. Try [] instead".to_string()
-                        );
                     }
                 }
                 Some(Token::OpenSquare) => {

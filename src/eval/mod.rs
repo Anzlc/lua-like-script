@@ -34,6 +34,7 @@ mod tests {
 
             table.fn = fn
             table.fn()
+            fn()
             
 
             
