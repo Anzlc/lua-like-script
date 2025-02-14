@@ -120,6 +120,38 @@ impl Interpreter {
                 }
                 panic!("{:?} can't be called!", base)
             }
+            AstNode::MethodCall { base, name, args, include_self } => {
+                let base = self.eval(&base).get_normal();
+                println!("Evaled base: {:?}", base);
+                if let Value::GcObject(r) = base {
+                    if let Some(v) = self.get_gc_value(r) {
+                        let mut evaled_args = vec![];
+                        // if *include_self {
+                        //     evaled_args.push(base);
+                        // }
+                        for a in args {
+                            evaled_args.push(self.eval(a).get_normal());
+                        }
+                        return ControlFlow::Normal(
+                            v
+                                .borrow_mut()
+                                .run_meta_function(
+                                    name.as_str(),
+                                    &mut self.gc,
+                                    evaled_args.as_slice()
+                                )
+                            // v
+                            //     .borrow()
+                            //     ::run_meta_function(
+                            //         name.as_str(),
+                            //         &mut self.gc,
+                            //         evaled_args.as_slice()
+                            //     )
+                        );
+                    }
+                }
+                panic!("{:?} can't be called!", base)
+            }
             _ => unimplemented!("Fucking wait a bit I am implementing this shit now"),
         }
     }

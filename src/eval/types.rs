@@ -21,16 +21,27 @@ impl Table {
 
 impl Table {
     pub fn append(&mut self, gc: &mut GarbageCollector, args: &[Value]) -> Value {
-        assert_eq!(args.len(), 1, "Insert expected 1 argument got {}", args.len());
+        assert_eq!(args.len(), 1, "Insert expected 1 arguments got {}", args.len());
 
         self.array.push(args[0].clone());
 
-        //table.array.push(args[1].clone());
         Value::Nil
+        //panic!("Incorrect call to append!")
     }
 }
 
 impl GcValue for Table {
+    fn run_meta_function(
+        &mut self,
+        name: &str,
+        gc: &mut GarbageCollector,
+        args: &[Value]
+    ) -> Value {
+        match name {
+            "append" => self.append(gc, args),
+            _ => panic!("Method {name} does not exist on type {}!", self.name()),
+        }
+    }
     fn get_referenced_children(&self, gc: &GarbageCollector) -> Vec<GcRef> {
         let mut r = vec![];
 

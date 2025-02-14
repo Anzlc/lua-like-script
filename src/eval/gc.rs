@@ -113,7 +113,12 @@ pub trait GcValue: Downcast {
         "<gc object>".to_string()
     }
 
-    fn run_meta_function(&mut self, name: &str, gc: &mut GarbageCollector) -> Value {
+    fn run_meta_function(
+        &mut self,
+        name: &str,
+        gc: &mut GarbageCollector,
+        args: &[Value]
+    ) -> Value {
         Value::Nil
     }
 

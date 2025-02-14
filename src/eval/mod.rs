@@ -32,10 +32,14 @@ mod tests {
                 res = "Workie"
             end
 
-            table.fn = fn
-            table.fn()
-            fn()
-            
+            table:append(fn)
+
+            table[0]()
+            table:append("Hello")
+            table:append("VSauce")
+            table:append("Here")
+            table:append(3.1415926)
+
 
             
 
