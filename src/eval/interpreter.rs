@@ -47,6 +47,15 @@ impl Interpreter {
     pub fn print_vars(&mut self) {
         self.env_stack.last().unwrap().borrow().print_vars(&mut self.gc);
     }
+    pub fn add_global_function(
+        &mut self,
+        name: &str,
+        fn_ptr: fn(&mut GarbageCollector, &[Value]) -> Value
+    ) {
+        let func = Function::FnPointer(fn_ptr);
+        let r = self.gc.allocate(Box::new(func));
+        self.set_variable(false, &name.to_owned(), Value::GcObject(r));
+    }
     pub fn eval(&mut self, node: &AstNode) -> ControlFlow {
         match node {
             AstNode::Literal(e) if !matches!(e, ParsedValue::Table { array: _, map: _ }) =>
@@ -105,9 +114,8 @@ impl Interpreter {
                 ControlFlow::Normal(Value::Nil)
             }
             AstNode::FunctionCall { target, args } => {
-                println!("Target: {:?}", target);
                 let base = self.eval(&target).get_normal();
-                println!("Evaled base: {:?}", base);
+
                 if let Value::GcObject(r) = base {
                     if let Some(v) = self.get_gc_value(r) {
                         let mut evaled_args = vec![];
@@ -122,7 +130,7 @@ impl Interpreter {
             }
             AstNode::MethodCall { base, name, args } => {
                 let base = self.eval(&base).get_normal();
-                println!("Evaled base: {:?}", base);
+
                 if let Value::GcObject(r) = base {
                     if let Some(v) = self.get_gc_value(r) {
                         let mut evaled_args = vec![];
@@ -392,10 +400,10 @@ impl Interpreter {
         return Rc::clone(self.env_stack.last().unwrap());
     }
     fn get_variable(&self, name: &String) -> Value {
-        println!(
-            "Got var ({name}): {:?}",
-            self.env_stack.last().unwrap().borrow().get_variable(name)
-        );
+        // println!(
+        //     "Got var ({name}): {:?}",
+        //     self.env_stack.last().unwrap().borrow().get_variable(name)
+        // );
 
         return self.env_stack.last().unwrap().borrow().get_variable(name).unwrap_or(Value::Nil);
     }

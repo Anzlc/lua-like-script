@@ -1,3 +1,6 @@
+use gc::GarbageCollector;
+use value::Value;
+
 mod interpreter;
 mod gc;
 mod environment;
@@ -39,9 +42,10 @@ mod tests {
             table:append("VSauce")
             table:append("Here")
             table:append(3.1415926)
+            table.name = "Anže"
 
-
-            
+            print("Result from here: ", table)
+            print(table)
 
             
 
@@ -56,12 +60,26 @@ mod tests {
         println!("{:#?}", parsed);
 
         let mut interpreter = Interpreter::new();
+        interpreter.add_global_function("print", print);
 
         if let Ok(AstNode::Program(p)) = parsed {
             for stmt in p {
                 interpreter.eval(&stmt);
             }
         }
-        interpreter.print_vars();
+        //interpreter.print_vars();
     }
+}
+fn print(gc: &mut GarbageCollector, args: &[Value]) -> Value {
+    let mut i = 0usize;
+    for el in args {
+        print!("{}", el.to_string(gc));
+        if args.len() - 1 != i {
+            print!(" ");
+        }
+        i += 1;
+    }
+    print!("\n");
+
+    Value::Nil
 }

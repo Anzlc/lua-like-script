@@ -26,7 +26,6 @@ impl Table {
         self.array.push(args[0].clone());
 
         Value::Nil
-        //panic!("Incorrect call to append!")
     }
 }
 
@@ -108,7 +107,11 @@ impl GcValue for Table {
             .collect::<Vec<String>>()
             .join(", ");
         if arr_part.len() > 0 {
-            format!("{{{arr_part}, {map_part}}}")
+            if map_part.len() > 0 {
+                format!("{{{arr_part}, {map_part}}}")
+            } else {
+                format!("{{{arr_part}}}")
+            }
         } else {
             format!("{{{map_part}}}")
         }
@@ -164,6 +167,7 @@ pub enum Function {
         body: AstNode,
     },
     FnPointer(fn(&mut GarbageCollector, &[Value]) -> Value),
+    FnPointerNoGc(fn(&[Value]) -> Value),
 }
 
 impl Function {
@@ -199,6 +203,9 @@ impl GcValue for Function {
             }
             Function::FnPointer(ptr) => {
                 return ptr(&mut interpreter.gc, values);
+            }
+            Function::FnPointerNoGc(ptr) => {
+                return ptr(values);
             }
         }
     }
