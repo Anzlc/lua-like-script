@@ -23,7 +23,6 @@ pub enum AstNode {
         base: Box<AstNode>,
         name: String,
         args: Vec<AstNode>,
-        include_self: bool,
     },
     Variable(String),
     Literal(ParsedValue),
@@ -839,8 +838,7 @@ impl Parser {
                         self.advance();
                     }
                 }
-                Some(Token::Colon) | Some(Token::DoubleColon) => {
-                    let include_self = matches!(self.get_current_token(), Some(Token::Colon));
+                Some(Token::Colon) => {
                     self.advance();
                     if let Some(Token::VariableOrFunction(i)) = self.get_current_token() {
                         let i = i.clone();
@@ -857,7 +855,6 @@ impl Parser {
                                     base: Box::new(base),
                                     name: i.to_owned(),
                                     args,
-                                    include_self,
                                 };
                                 break;
                             }
@@ -874,7 +871,6 @@ impl Parser {
                                 base: Box::new(base),
                                 name: i.to_owned(),
                                 args,
-                                include_self,
                             };
                             break;
                         }

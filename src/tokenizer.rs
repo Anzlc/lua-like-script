@@ -49,7 +49,7 @@ pub enum Token {
     CloseSquare,
     Semicolon,
     Colon,
-    DoubleColon,
+
     Comma,
     Dot,
     TripleDot,
@@ -195,11 +195,6 @@ impl Tokenizer {
                         iterator.next();
                         continue;
                     }
-                    if let Some(Token::DoubleColon) = Tokenizer::try_match_token(&new_buf) {
-                        buf = new_buf;
-                        iterator.next();
-                        continue;
-                    }
 
                     self.add_token(Tokenizer::try_match_token(&buf));
                     break;
@@ -311,7 +306,7 @@ impl Tokenizer {
             "." => Some(Token::Dot),
             "," => Some(Token::Comma),
             ":" => Some(Token::Colon),
-            "::" => Some(Token::DoubleColon),
+
             ".." => Some(Token::Operator(Operator::Concatenation)),
             "..." => Some(Token::TripleDot),
             "=" => Some(Token::Set),

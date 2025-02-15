@@ -120,7 +120,7 @@ impl Interpreter {
                 }
                 panic!("{:?} can't be called!", base)
             }
-            AstNode::MethodCall { base, name, args, include_self } => {
+            AstNode::MethodCall { base, name, args } => {
                 let base = self.eval(&base).get_normal();
                 println!("Evaled base: {:?}", base);
                 if let Value::GcObject(r) = base {
