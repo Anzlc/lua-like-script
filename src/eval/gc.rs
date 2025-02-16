@@ -1,19 +1,21 @@
 use std::{ any::Any, cell::RefCell, collections::HashMap, mem, rc::Rc };
 
 use downcast_rs::{ Downcast, impl_downcast };
+use rand::{ rngs::SmallRng, RngCore, SeedableRng };
 use super::{ interpreter::{ self, Interpreter }, types::Iterable, value::Value };
 
 pub struct GarbageCollector {
     heap: HashMap<GcRef, GcObject>,
+    rng: SmallRng,
 }
 
 impl GarbageCollector {
     pub fn new() -> Self {
-        GarbageCollector { heap: HashMap::new() }
+        GarbageCollector { heap: HashMap::new(), rng: SmallRng::seed_from_u64(0x13b156d4) }
     }
 
     pub fn allocate(&mut self, value: Box<dyn GcValue>) -> GcRef {
-        let id = GarbageCollector::get_id(&value);
+        let id = self.rng.next_u32();
         println!("Id: {}", id);
 
         self.heap.insert(GcRef(id), GcObject {
@@ -38,6 +40,7 @@ impl GarbageCollector {
         None
     }
 
+    // Does not work for fn ptr's
     fn get_id(value: &Box<dyn GcValue>) -> u32 {
         let ptr = value as *const Box<dyn GcValue>;
         let id = ptr as u32;

@@ -1,3 +1,5 @@
+use std::io::{ Read, Write };
+
 use gc::GarbageCollector;
 use value::Value;
 
@@ -30,22 +32,11 @@ mod tests {
     fn test_eval() {
         let code =
             r#"
-            table = {}
-            function fn()
-                res = "Workie"
-            end
+            
+            print("Example program")
+            name = input("Enter your name: ")
 
-            table:append(fn)
-
-            table[0]()
-            table:append("Hello")
-            table:append("VSauce")
-            table:append("Here")
-            table:append(3.1415926)
-            table.name = "Anže"
-
-            print("Result from here: ", table)
-            print(table)
+            print("Hello", name .. "!")
 
             
 
@@ -61,13 +52,14 @@ mod tests {
 
         let mut interpreter = Interpreter::new();
         interpreter.add_global_function("print", print);
+        interpreter.add_global_function("input", input);
 
+        interpreter.print_vars();
         if let Ok(AstNode::Program(p)) = parsed {
             for stmt in p {
                 interpreter.eval(&stmt);
             }
         }
-        //interpreter.print_vars();
     }
 }
 fn print(gc: &mut GarbageCollector, args: &[Value]) -> Value {
@@ -79,7 +71,21 @@ fn print(gc: &mut GarbageCollector, args: &[Value]) -> Value {
         }
         i += 1;
     }
-    print!("\n");
-
+    println!();
+    let _ = std::io::stdout().flush();
     Value::Nil
+}
+fn input(_: &mut GarbageCollector, args: &[Value]) -> Value {
+    assert_eq!(1, args.len(), "Expected 1 argument for input got {}", args.len());
+    if let Value::String(message) = &args[0] {
+        print!("{message}");
+        let _ = std::io::stdout().flush();
+
+        let mut buf = String::new();
+        let _ = std::io::stdin().read_line(&mut buf);
+
+        return Value::String(buf.trim().to_string());
+    } else {
+        panic!("Expected String in input");
+    }
 }
