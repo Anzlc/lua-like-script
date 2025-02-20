@@ -89,3 +89,10 @@ fn input(_: &mut GarbageCollector, args: &[Value]) -> Value {
         panic!("Expected String in input");
     }
 }
+
+fn int(_: &mut GarbageCollector, args: &[Value]) -> Value {
+    assert_eq!(1, args.len(), "Expected 1 argument for input got {}", args.len());
+    match args[0] {
+        _ => panic!("Cannot convert {:?} to int", args[0]),
+    }
+}
