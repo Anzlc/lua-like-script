@@ -1,5 +1,6 @@
 use std::io::{ Read, Write };
 
+use function_macro::intepreter_function;
 use gc::GarbageCollector;
 use value::Value;
 
@@ -75,6 +76,8 @@ fn print(gc: &mut GarbageCollector, args: &[Value]) -> Value {
     let _ = std::io::stdout().flush();
     Value::Nil
 }
+
+#[intepreter_function]
 fn input(_: &mut GarbageCollector, args: &[Value]) -> Value {
     assert_eq!(1, args.len(), "Expected 1 argument for input got {}", args.len());
     if let Value::String(message) = &args[0] {
