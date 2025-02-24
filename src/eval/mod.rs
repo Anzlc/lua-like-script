@@ -63,6 +63,7 @@ mod tests {
         }
     }
 }
+
 fn print(gc: &mut GarbageCollector, args: &[Value]) -> Value {
     let mut i = 0usize;
     for el in args {
@@ -78,17 +79,12 @@ fn print(gc: &mut GarbageCollector, args: &[Value]) -> Value {
 }
 
 #[intepreter_function]
-fn input(_: &mut GarbageCollector, args: &[Value]) -> Value {
-    assert_eq!(1, args.len(), "Expected 1 argument for input got {}", args.len());
-    if let Value::String(message) = &args[0] {
-        print!("{message}");
-        let _ = std::io::stdout().flush();
+fn input(msg: String) -> String {
+    print!("{msg}");
+    let _ = std::io::stdout().flush();
 
-        let mut buf = String::new();
-        let _ = std::io::stdin().read_line(&mut buf);
+    let mut buf = String::new();
+    let _ = std::io::stdin().read_line(&mut buf);
 
-        return Value::String(buf.trim().to_string());
-    } else {
-        panic!("Expected String in input");
-    }
+    return buf.trim().to_string();
 }

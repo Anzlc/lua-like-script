@@ -69,6 +69,73 @@ impl From<ParsedValue> for Value {
     }
 }
 
+impl Into<String> for Value {
+    fn into(self) -> String {
+        if let Value::String(s) = self {
+            return s;
+        }
+        panic!("Cannot convert {:?} to String", self)
+    }
+}
+impl Into<i64> for Value {
+    fn into(self) -> i64 {
+        if let Value::Number(s) = self {
+            return s;
+        }
+        panic!("Cannot convert {:?} to i64", self)
+    }
+}
+impl Into<f64> for Value {
+    fn into(self) -> f64 {
+        if let Value::Float(s) = self {
+            return s;
+        }
+        panic!("Cannot convert {:?} to f64", self)
+    }
+}
+impl Into<bool> for Value {
+    fn into(self) -> bool {
+        if let Value::Bool(s) = self {
+            return s;
+        }
+        panic!("Cannot convert {:?} to bool", self)
+    }
+}
+impl Into<()> for Value {
+    fn into(self) -> () {
+        if let Value::Nil = self {
+            return ();
+        }
+        panic!("Cannot convert {:?} to nil", self)
+    }
+}
+
+impl From<String> for Value {
+    fn from(value: String) -> Self {
+        return Value::String(value);
+    }
+}
+impl From<i64> for Value {
+    fn from(value: i64) -> Self {
+        return Value::Number(value);
+    }
+}
+impl From<f64> for Value {
+    fn from(value: f64) -> Self {
+        return Value::Float(value);
+    }
+}
+impl From<bool> for Value {
+    fn from(value: bool) -> Self {
+        return Value::Bool(value);
+    }
+}
+impl From<()> for Value {
+    fn from(_value: ()) -> Self {
+        return Value::Nil;
+    }
+}
+
 impl Value {
     pub fn iter(&self, gc: &mut GarbageCollector) -> GcRef {
         if let Value::String(s) = self {
