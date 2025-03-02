@@ -1,6 +1,6 @@
 use std::io::{ Read, Write };
 
-use function_macro::intepreter_function;
+use function_macro::interpreter_function;
 use gc::GarbageCollector;
 use value::Value;
 
@@ -78,7 +78,7 @@ fn print(gc: &mut GarbageCollector, args: &[Value]) -> Value {
     Value::Nil
 }
 
-#[intepreter_function]
+#[interpreter_function]
 fn input(msg: String) -> String {
     print!("{msg}");
     let _ = std::io::stdout().flush();

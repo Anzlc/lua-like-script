@@ -5,7 +5,7 @@ use quote::quote;
 use syn::{ parse_macro_input, FnArg, ItemFn, Pat };
 
 #[proc_macro_attribute]
-pub fn intepreter_function(args: TokenStream, item: TokenStream) -> TokenStream {
+pub fn interpreter_function(args: TokenStream, item: TokenStream) -> TokenStream {
     let item = parse_macro_input!(item as ItemFn);
     let sig = item.sig;
     let name = sig.ident;
@@ -27,7 +27,11 @@ pub fn intepreter_function(args: TokenStream, item: TokenStream) -> TokenStream 
             let conv =
                 // Ty ... function input type
                 quote! {
-                let #ident: #ty = args[#i].clone().into();
+                    let #ident: #ty;
+                
+
+                    #ident = args[#i].clone().into();
+                
             };
             identifiers.push(ident);
 
